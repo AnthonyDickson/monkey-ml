@@ -24,6 +24,8 @@
               ocamlPackages.ocaml-lsp
               ocamlPackages.ocamlformat
               ocamlPackages.alcotest
+              # For formatting markdown
+              dprint
             ];
           };
       }
