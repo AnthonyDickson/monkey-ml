@@ -1,0 +1,3 @@
+(library
+ (name monkeylang)
+ (public_name monkeylang))

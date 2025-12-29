@@ -17,8 +17,15 @@
           with pkgs;
           mkShell {
             packages = with pkgs; [
-              zig
-              zls
+              ocaml
+              ocamlPackages.utop
+              ocamlPackages.dune_3
+              ocamlPackages.odoc
+              ocamlPackages.ocaml-lsp
+              ocamlPackages.ocamlformat
+              ocamlPackages.alcotest
+              # For formatting markdown
+              dprint
             ];
           };
       }

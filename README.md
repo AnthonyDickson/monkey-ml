@@ -1,6 +1,6 @@
 # monkeylang
 
-A Zig implementation of Monkey Language from "Writing an Interpreter in Go" by Thorsten Ball
+An OCaml implementation of Monkey Language from "Writing an Interpreter in Go" by Thorsten Ball
 
 ## Getting Started
 
@@ -9,8 +9,32 @@ If you have `nix`, you can run `nix develop` to enter a dev shell with all of th
 
 ## Useful Commands
 
+- Interpreter (REPL) with project modules:
+
+  ```shell
+  dune utop
+  ```
+
+- Build and watch for file changes:
+
+  ```shell
+  dune build -w
+  ```
+
+- Build, run and watch for file changes:
+
+  ```shell
+  dune exec monkeylang -w
+  ```
+
 - Run tests and watch for file changes:
 
   ```shell
-  zig build test --watch
+  dune test -w
+  ```
+
+- Format the entire project:
+
+  ```shell
+  dune build @fmt --auto-promote
   ```

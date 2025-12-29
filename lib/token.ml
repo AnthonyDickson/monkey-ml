@@ -1,0 +1,24 @@
+type token_type =
+  | Illegal
+  | Eof
+  (* Identifiers + literals *)
+  | Ident (* add, foobar, x, y, ... *)
+  | Int (* 1343456 *)
+  (* Operators *)
+  | Assign (* = *)
+  | Plus (* + *)
+  (* Delimiters *)
+  | Comma (* , *)
+  | Semicolon (* ; *)
+  | Lparen (* ( *)
+  | Rparen (* ) *)
+  | Lbrace (* { *)
+  | Rbrace (* } *)
+  (* Keywords *)
+  | Function
+  | Let
+
+type token = {
+  type_: token_type;
+  literal: string
+}
