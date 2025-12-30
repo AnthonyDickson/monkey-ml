@@ -1,9 +1,9 @@
-type token_type =
-  | Illegal
+type token =
+  | Illegal of char
   | Eof
   (* Identifiers + literals *)
-  | Ident (* add, foobar, x, y, ... *)
-  | Int (* 1343456 *)
+  | Ident of string (* add, foobar, x, y, ... *)
+  | Int of int (* 1343456 *)
   | True
   | False
   (* Operators *)
@@ -31,11 +31,11 @@ type token_type =
   | Else
   | Return
 
-let string_of_token_type = function
-  | Illegal -> "Illegal"
+let string_of_token = function
+  | Illegal ch -> Printf.sprintf "Illegal %c" ch
   | Eof -> "Eof"
-  | Ident -> "Ident"
-  | Int -> "Int"
+  | Ident literal -> Printf.sprintf "Ident %s" literal
+  | Int literal -> Printf.sprintf "Int %d" literal
   | True -> "True"
   | False -> "False"
   | Assign -> "Assign"
@@ -59,15 +59,4 @@ let string_of_token_type = function
   | If -> "If"
   | Else -> "Else"
   | Return -> "Return"
-;;
-
-type token =
-  { type_ : token_type
-  ; literal : string
-  }
-
-let string_of_token token =
-  let { type_ = token_type; literal } : token = token in
-  let token_string = string_of_token_type token_type  in
-  Printf.sprintf "{Type:%s  Literal:%s}" token_string literal
 ;;

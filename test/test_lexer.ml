@@ -1,9 +1,7 @@
-let token_type_testable =
+let token_testable =
   let open Monkeylang in
-  let pp_token_type fmt token_type =
-    Format.pp_print_string fmt (Token.string_of_token_type token_type)
-  in
-  Alcotest.testable pp_token_type ( = )
+  let pp_token fmt token = Format.pp_print_string fmt (Token.string_of_token token) in
+  Alcotest.testable pp_token ( = )
 ;;
 
 let test_next_token () =
@@ -32,88 +30,87 @@ let test_next_token () =
       ; "10 != 9;"
       ]
   and expected =
-    [ "let", Token.Let
-    ; "five", Token.Ident
-    ; "=", Token.Assign
-    ; "5", Token.Int
-    ; ";", Token.Semicolon
-    ; "let", Token.Let
-    ; "ten", Token.Ident
-    ; "=", Token.Assign
-    ; "10", Token.Int
-    ; ";", Token.Semicolon
-    ; "let", Token.Let
-    ; "add", Token.Ident
-    ; "=", Token.Assign
-    ; "fn", Token.Function
-    ; "(", Token.Lparen
-    ; "x", Token.Ident
-    ; ",", Token.Comma
-    ; "y", Token.Ident
-    ; ")", Token.Rparen
-    ; "{", Token.Lbrace
-    ; "x", Token.Ident
-    ; "+", Token.Plus
-    ; "y", Token.Ident
-    ; ";", Token.Semicolon
-    ; "}", Token.Rbrace
-    ; ";", Token.Semicolon
-    ; "let", Token.Let
-    ; "result", Token.Ident
-    ; "=", Token.Assign
-    ; "add", Token.Ident
-    ; "(", Token.Lparen
-    ; "five", Token.Ident
-    ; ",", Token.Comma
-    ; "ten", Token.Ident
-    ; ")", Token.Rparen
-    ; ";", Token.Semicolon
-    ; "!", Token.Bang
-    ; "-", Token.Minus
-    ; "/", Token.Slash
-    ; "*", Token.Asterisk
-    ; "5", Token.Int
-    ; ";", Token.Semicolon
-    ; "5", Token.Int
-    ; "<", Token.Lt
-    ; "10", Token.Int
-    ; ">", Token.Gt
-    ; "5", Token.Int
-    ; ";", Token.Semicolon
-    ; "if", Token.If
-    ; "(", Token.Lparen
-    ; "5", Token.Int
-    ; "<", Token.Lt
-    ; "10", Token.Int
-    ; ")", Token.Rparen
-    ; "{", Token.Lbrace
-    ; "return", Token.Return
-    ; "true", Token.True
-    ; ";", Token.Semicolon
-    ; "}", Token.Rbrace
-    ; "else", Token.Else
-    ; "{", Token.Lbrace
-    ; "return", Token.Return
-    ; "false", Token.False
-    ; ";", Token.Semicolon
-    ; "}", Token.Rbrace
-    ; "10", Token.Int
-    ; "==", Token.Eq
-    ; "10", Token.Int
-    ; ";", Token.Semicolon
-    ; "10", Token.Int
-    ; "!=", Token.NotEq
-    ; "9", Token.Int
-    ; ";", Token.Semicolon
-    ; "", Token.Eof
+    [ Token.Let
+    ; Token.Ident "five"
+    ; Token.Assign
+    ; Token.Int 5
+    ; Token.Semicolon
+    ; Token.Let
+    ; Token.Ident "ten"
+    ; Token.Assign
+    ; Token.Int 10
+    ; Token.Semicolon
+    ; Token.Let
+    ; Token.Ident "add"
+    ; Token.Assign
+    ; Token.Function
+    ; Token.Lparen
+    ; Token.Ident "x"
+    ; Token.Comma
+    ; Token.Ident "y"
+    ; Token.Rparen
+    ; Token.Lbrace
+    ; Token.Ident "x"
+    ; Token.Plus
+    ; Token.Ident "y"
+    ; Token.Semicolon
+    ; Token.Rbrace
+    ; Token.Semicolon
+    ; Token.Let
+    ; Token.Ident "result"
+    ; Token.Assign
+    ; Token.Ident "add"
+    ; Token.Lparen
+    ; Token.Ident "five"
+    ; Token.Comma
+    ; Token.Ident "ten"
+    ; Token.Rparen
+    ; Token.Semicolon
+    ; Token.Bang
+    ; Token.Minus
+    ; Token.Slash
+    ; Token.Asterisk
+    ; Token.Int 5
+    ; Token.Semicolon
+    ; Token.Int 5
+    ; Token.Lt
+    ; Token.Int 10
+    ; Token.Gt
+    ; Token.Int 5
+    ; Token.Semicolon
+    ; Token.If
+    ; Token.Lparen
+    ; Token.Int 5
+    ; Token.Lt
+    ; Token.Int 10
+    ; Token.Rparen
+    ; Token.Lbrace
+    ; Token.Return
+    ; Token.True
+    ; Token.Semicolon
+    ; Token.Rbrace
+    ; Token.Else
+    ; Token.Lbrace
+    ; Token.Return
+    ; Token.False
+    ; Token.Semicolon
+    ; Token.Rbrace
+    ; Token.Int 10
+    ; Token.Eq
+    ; Token.Int 10
+    ; Token.Semicolon
+    ; Token.Int 10
+    ; Token.NotEq
+    ; Token.Int 9
+    ; Token.Semicolon
+    ; Token.Eof
     ]
   in
   let rec lex l = function
     | [] -> ()
-    | (expected_identifier, expected_token) :: t ->
+    |  expected_token :: t ->
       let token, ll = Lexer.next_token l in
-      Alcotest.(check string) "same literal" expected_identifier token.literal;
-      Alcotest.(check token_type_testable) "same token type" expected_token token.type_;
+      Alcotest.(check token_testable) "same token" expected_token token;
       lex ll t
   in
   let lexer = Result.get_ok @@ Lexer.create input in

@@ -40,7 +40,7 @@ let is_whitespace = function
   | _ -> false
 ;;
 
-let token_type_of_string = function
+let keyword_of_string = function
   | "fn" -> Token.Function
   | "let" -> Token.Let
   | "if" -> Token.If
@@ -48,10 +48,10 @@ let token_type_of_string = function
   | "return" -> Token.Return
   | "true" -> Token.True
   | "false" -> Token.False
-  | _ -> Token.Ident
+  | literal -> Token.Ident literal
 ;;
 
-let read_multichar_token_and_advance lexer is_valid token_type_of_string =
+let read_multichar_token_and_advance lexer is_valid token_of_literal =
   let rec aux lexer' =
     match lexer'.current_char with
     | Some ch -> if is_valid ch then aux (advance lexer') else lexer'
@@ -61,12 +61,12 @@ let read_multichar_token_and_advance lexer is_valid token_type_of_string =
   let start_pos = lexer.position in
   let length = lexer'.position - start_pos in
   let literal = String.sub lexer.input start_pos length in
-  let token : Token.token = { type_ = token_type_of_string literal; literal } in
+  let token = token_of_literal literal in
   token, lexer'
 ;;
 
 let read_identifier_and_advance lexer =
-  read_multichar_token_and_advance lexer is_letter token_type_of_string
+  read_multichar_token_and_advance lexer is_letter keyword_of_string
 ;;
 
 let is_digit = function
@@ -75,43 +75,35 @@ let is_digit = function
 ;;
 
 let read_number_and_advance lexer =
-  read_multichar_token_and_advance lexer is_digit (fun _ -> Token.Int)
+  read_multichar_token_and_advance lexer is_digit (fun str ->
+    (* int_of_string is could potentially raise an exception, consider handling
+    the exception or using int_of_string_opt *)
+    Token.Int (int_of_string str))
 ;;
 
 let rec next_token lexer =
-  let make_token type_ ch : Token.token * lexer =
-    { type_; literal = String.make 1 ch }, advance lexer
-  in
-  (* Assumes [literal] is two chars *)
-  let make_token' type_ literal : Token.token * lexer =
-    (* Advance lexer twice to consume two char token. *)
-    { type_; literal }, advance @@ advance lexer
-  in
-  let curr_char = lexer.current_char in
-  match curr_char with
+  let one_char token = token, advance lexer
+  and two_char token = token, advance (advance lexer) in
+  match lexer.current_char with
   | Some '=' ->
-    if peek_next_char lexer = Some '='
-    then make_token' Token.Eq "=="
-    else make_token Token.Assign '='
-  | Some '+' -> make_token Token.Plus '+'
-  | Some '-' -> make_token Token.Minus '-'
-  | Some '*' -> make_token Token.Asterisk '*'
-  | Some '/' -> make_token Token.Slash '/'
+    if peek_next_char lexer = Some '=' then two_char Token.Eq else one_char Token.Assign
+  | Some '+' -> one_char Token.Plus
+  | Some '-' -> one_char Token.Minus
+  | Some '*' -> one_char Token.Asterisk
+  | Some '/' -> one_char Token.Slash
   | Some '!' ->
-    if peek_next_char lexer = Some '='
-    then make_token' Token.NotEq "!="
-    else make_token Token.Bang '!'
-  | Some '<' -> make_token Token.Lt '<'
-  | Some '>' -> make_token Token.Gt '>'
-  | Some '(' -> make_token Token.Lparen '('
-  | Some ')' -> make_token Token.Rparen ')'
-  | Some '{' -> make_token Token.Lbrace '{'
-  | Some '}' -> make_token Token.Rbrace '}'
-  | Some ',' -> make_token Token.Comma ','
-  | Some ';' -> make_token Token.Semicolon ';'
+    if peek_next_char lexer = Some '=' then two_char Token.NotEq else one_char Token.Bang
+  | Some '<' -> one_char Token.Lt
+  | Some '>' -> one_char Token.Gt
+  | Some '(' -> one_char Token.Lparen
+  | Some ')' -> one_char Token.Rparen
+  | Some '{' -> one_char Token.Lbrace
+  | Some '}' -> one_char Token.Rbrace
+  | Some ',' -> one_char Token.Comma
+  | Some ';' -> one_char Token.Semicolon
   | Some ch when is_letter ch -> read_identifier_and_advance lexer
   | Some ch when is_digit ch -> read_number_and_advance lexer
   | Some ch when is_whitespace ch -> next_token (advance lexer)
-  | Some ch -> make_token Token.Illegal ch
-  | None -> { type_ = Token.Eof; literal = "" }, advance lexer
+  | Some ch -> one_char (Token.Illegal ch)
+  | None -> one_char Token.Eof
 ;;
