@@ -1,34 +1,7 @@
 let token_type_testable =
   let open Monkeylang in
-  let open Token in
-  let pp_token_type fmt = function
-    | Illegal -> Format.fprintf fmt "Illegal"
-    | Eof -> Format.fprintf fmt "Eof"
-    | Ident -> Format.fprintf fmt "Ident"
-    | Int -> Format.fprintf fmt "Int"
-    | True -> Format.fprintf fmt "True"
-    | False -> Format.fprintf fmt "False"
-    | Assign -> Format.fprintf fmt "Assign"
-    | Plus -> Format.fprintf fmt "Plus"
-    | Minus -> Format.fprintf fmt "Minus"
-    | Asterisk -> Format.fprintf fmt "Asterisk"
-    | Slash -> Format.fprintf fmt "Slash"
-    | Bang -> Format.fprintf fmt "Bang"
-    | Lt -> Format.fprintf fmt "Lt"
-    | Gt -> Format.fprintf fmt "Gt"
-    | Eq -> Format.fprintf fmt "Eq"
-    | NotEq -> Format.fprintf fmt "NotEq"
-    | Comma -> Format.fprintf fmt "Comma"
-    | Semicolon -> Format.fprintf fmt "Semicolon"
-    | Lparen -> Format.fprintf fmt "Lparen"
-    | Rparen -> Format.fprintf fmt "Rparen"
-    | Lbrace -> Format.fprintf fmt "Lbrace"
-    | Rbrace -> Format.fprintf fmt "Rbrace"
-    | Function -> Format.fprintf fmt "Function"
-    | Let -> Format.fprintf fmt "Let"
-    | If -> Format.fprintf fmt "If"
-    | Else -> Format.fprintf fmt "Else"
-    | Return -> Format.fprintf fmt "Return"
+  let pp_token_type fmt token_type =
+    Format.pp_print_string fmt (Token.string_of_token_type token_type)
   in
   Alcotest.testable pp_token_type ( = )
 ;;
