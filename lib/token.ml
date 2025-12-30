@@ -4,9 +4,19 @@ type token_type =
   (* Identifiers + literals *)
   | Ident (* add, foobar, x, y, ... *)
   | Int (* 1343456 *)
+  | True
+  | False
   (* Operators *)
   | Assign (* = *)
   | Plus (* + *)
+  | Minus (* - *)
+  | Asterisk (* * *)
+  | Slash (* / *)
+  | Bang (* ! *)
+  | Lt (* < *)
+  | Gt (* > *)
+  | Eq (* == *)
+  | NotEq (* != *)
   (* Delimiters *)
   | Comma (* , *)
   | Semicolon (* ; *)
@@ -17,6 +27,9 @@ type token_type =
   (* Keywords *)
   | Function
   | Let
+  | If
+  | Else
+  | Return
 
 type token = {
   type_: token_type;

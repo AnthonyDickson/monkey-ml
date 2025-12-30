@@ -6,8 +6,18 @@ let token_type_testable =
     | Eof -> Format.fprintf fmt "Eof"
     | Ident -> Format.fprintf fmt "Ident"
     | Int -> Format.fprintf fmt "Int"
+    | True -> Format.fprintf fmt "True"
+    | False -> Format.fprintf fmt "False"
     | Assign -> Format.fprintf fmt "Assign"
     | Plus -> Format.fprintf fmt "Plus"
+    | Minus -> Format.fprintf fmt "Minus"
+    | Asterisk -> Format.fprintf fmt "Asterisk"
+    | Slash -> Format.fprintf fmt "Slash"
+    | Bang -> Format.fprintf fmt "Bang"
+    | Lt -> Format.fprintf fmt "Lt"
+    | Gt -> Format.fprintf fmt "Gt"
+    | Eq -> Format.fprintf fmt "Eq"
+    | NotEq -> Format.fprintf fmt "NotEq"
     | Comma -> Format.fprintf fmt "Comma"
     | Semicolon -> Format.fprintf fmt "Semicolon"
     | Lparen -> Format.fprintf fmt "Lparen"
@@ -16,52 +26,11 @@ let token_type_testable =
     | Rbrace -> Format.fprintf fmt "Rbrace"
     | Function -> Format.fprintf fmt "Function"
     | Let -> Format.fprintf fmt "Let"
+    | If -> Format.fprintf fmt "If"
+    | Else -> Format.fprintf fmt "Else"
+    | Return -> Format.fprintf fmt "Return"
   in
-  let eq_token_type a b =
-    match a, b with
-    | Illegal, Illegal -> true
-    | Eof, Eof -> true
-    | Ident, Ident -> true
-    | Int, Int -> true
-    | Assign, Assign -> true
-    | Plus, Plus -> true
-    | Comma, Comma -> true
-    | Semicolon, Semicolon -> true
-    | Lparen, Lparen -> true
-    | Rparen, Rparen -> true
-    | Lbrace, Lbrace -> true
-    | Rbrace, Rbrace -> true
-    | Function, Function -> true
-    | Let, Let -> true
-    | _ -> false
-  in
-  Alcotest.testable pp_token_type eq_token_type
-;;
-
-let test_next_token_special_chars () =
-  let open Monkeylang in
-  let input = "=+(){},;" in
-  let expected =
-    [ "=", Token.Assign
-    ; "+", Token.Plus
-    ; "(", Token.Lparen
-    ; ")", Token.Rparen
-    ; "{", Token.Lbrace
-    ; "}", Token.Rbrace
-    ; ",", Token.Comma
-    ; ";", Token.Semicolon
-    ; "", Token.Eof
-    ]
-  in
-  let rec lex l = function
-    | [] -> ()
-    | (expected_identifier, expected_token) :: t ->
-      let token, ll = Lexer.next_token l in
-      Alcotest.(check string) "same literal" expected_identifier token.literal;
-      Alcotest.(check token_type_testable) "same token type" expected_token token.type_;
-      lex ll t
-  and lexer = Result.get_ok @@ Lexer.create input in
-  lex lexer expected
+  Alcotest.testable pp_token_type ( = )
 ;;
 
 let test_next_token () =
@@ -77,7 +46,17 @@ let test_next_token () =
       ; "};"
       ; ""
       ; "let result = add(five, ten);"
+      ; "!-/*5;"
+      ; "5 < 10 > 5;"
       ; ""
+      ; "if (5 < 10) {"
+      ; "    return true;"
+      ; "} else {"
+      ; "    return false;"
+      ; "}"
+      ; ""
+      ; "10 == 10;"
+      ; "10 != 9;"
       ]
   and expected =
     [ "let", Token.Let
@@ -116,6 +95,43 @@ let test_next_token () =
     ; "ten", Token.Ident
     ; ")", Token.Rparen
     ; ";", Token.Semicolon
+    ; "!", Token.Bang
+    ; "-", Token.Minus
+    ; "/", Token.Slash
+    ; "*", Token.Asterisk
+    ; "5", Token.Int
+    ; ";", Token.Semicolon
+    ; "5", Token.Int
+    ; "<", Token.Lt
+    ; "10", Token.Int
+    ; ">", Token.Gt
+    ; "5", Token.Int
+    ; ";", Token.Semicolon
+    ; "if", Token.If
+    ; "(", Token.Lparen
+    ; "5", Token.Int
+    ; "<", Token.Lt
+    ; "10", Token.Int
+    ; ")", Token.Rparen
+    ; "{", Token.Lbrace
+    ; "return", Token.Return
+    ; "true", Token.True
+    ; ";", Token.Semicolon
+    ; "}", Token.Rbrace
+    ; "else", Token.Else
+    ; "{", Token.Lbrace
+    ; "return", Token.Return
+    ; "false", Token.False
+    ; ";", Token.Semicolon
+    ; "}", Token.Rbrace
+    ; "10", Token.Int
+    ; "==", Token.Eq
+    ; "10", Token.Int
+    ; ";", Token.Semicolon
+    ; "10", Token.Int
+    ; "!=", Token.NotEq
+    ; "9", Token.Int
+    ; ";", Token.Semicolon
     ; "", Token.Eof
     ]
   in
@@ -131,8 +147,4 @@ let test_next_token () =
   lex lexer expected
 ;;
 
-let test_suite =
-  [ Alcotest.test_case "special characters" `Quick test_next_token_special_chars
-  ; Alcotest.test_case "small example" `Quick test_next_token
-  ]
-;;
+let test_suite = [ Alcotest.test_case "small example" `Quick test_next_token ]
