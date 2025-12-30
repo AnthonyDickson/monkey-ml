@@ -5,7 +5,7 @@ let rec start () =
   print_string prompt;
   let rec loop lexer' =
     match Lexer.next_token lexer' with
-    | Token.Eof, _ -> ()
+    | Token.Eof, _ -> start ()
     | token, lexer'' ->
       print_endline (Token.string_of_token token);
       loop lexer''
