@@ -1,6 +1,6 @@
 let token_testable =
   let open Monkeylang in
-  let pp_token fmt token = Format.pp_print_string fmt (Token.string_of_token token) in
+  let pp_token fmt token = Format.pp_print_string fmt (Token.to_string token) in
   Alcotest.testable pp_token ( = )
 ;;
 
@@ -28,6 +28,7 @@ let test_next_token () =
       ; ""
       ; "10 == 10;"
       ; "10 != 9;"
+      ; "#"
       ]
   and expected =
     [ Token.Let
@@ -103,12 +104,13 @@ let test_next_token () =
     ; Token.NotEq
     ; Token.Int 9
     ; Token.Semicolon
+    ; Token.Illegal '#'
     ; Token.Eof
     ]
   in
   let rec lex l = function
     | [] -> ()
-    |  expected_token :: t ->
+    | expected_token :: t ->
       let token, ll = Lexer.next_token l in
       Alcotest.(check token_testable) "same token" expected_token token;
       lex ll t

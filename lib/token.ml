@@ -31,7 +31,7 @@ type token =
   | Else
   | Return
 
-let string_of_token = function
+let to_string = function
   | Illegal ch -> Printf.sprintf "Illegal %c" ch
   | Eof -> "Eof"
   | Ident literal -> Printf.sprintf "Ident %s" literal
