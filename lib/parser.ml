@@ -56,9 +56,16 @@ let parse_let_statement parser =
   Ok (Ast.Let { identifier }, parser)
 ;;
 
+let parse_return_statement parser =
+  let* parser = Ok (advance parser) in
+  let* parser = Ok (advance_while parser (fun token -> token <> Token.Semicolon)) in
+  Ok (Ast.Return, parser)
+;;
+
 let parse_statement parser =
   match parser.curr_token with
   | Token.Let -> parse_let_statement parser
+  | Token.Return -> parse_return_statement parser
   | token -> Error (Printf.sprintf "Unexpected token: %s" (Token.to_string token))
 ;;
 
