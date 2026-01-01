@@ -1,8 +1,9 @@
 type identifier = string
-type expression = Identifier of identifier
+type expression = Identifier of identifier | IntLiteral of int
 
 let string_of_expression = function
   | Identifier ident -> ident
+  | IntLiteral integer -> Int.to_string integer
 ;;
 
 type statement =

@@ -66,6 +66,7 @@ let parse_return_statement parser =
 let parse_prefix parser =
   match parser.curr_token with
   | Token.Ident identifier -> Ok (Ast.Identifier identifier, parser)
+  | Token.Int integer -> Ok (Ast.IntLiteral integer, parser)
   | token -> Error (Printf.sprintf "unexpected prefix token %s" (Token.to_string token))
 ;;
 

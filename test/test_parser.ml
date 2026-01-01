@@ -66,8 +66,13 @@ let test_parse_return_statement () =
 ;;
 
 let test_parse_expression_statement () =
-  let input = "foobar" in
-  let expected_program = [ Ast.Expression (Identifier "foobar") ] in
+  let input =
+    {|
+      foobar;
+      5;
+    |}
+  in
+  let expected_program = [ Ast.Expression (Identifier "foobar"); Ast.Expression (IntLiteral 5) ] in
   let lexer = Result.get_ok @@ Lexer.create input in
   let parser = Parser.create lexer in
   match Parser.parse_program parser with
