@@ -65,8 +65,19 @@ let test_parse_return_statement () =
   | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
 ;;
 
+let test_parse_expression_statement () =
+  let input = "foobar" in
+  let expected_program = [ Ast.Expression (Identifier "foobar") ] in
+  let lexer = Result.get_ok @@ Lexer.create input in
+  let parser = Parser.create lexer in
+  match Parser.parse_program parser with
+  | Ok actual_program -> check_same_statements expected_program actual_program
+  | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
+;;
+
 let test_suite =
   [ Alcotest.test_case "let statements" `Quick test_parse_let_statement
   ; Alcotest.test_case "return statements" `Quick test_parse_return_statement
+  ; Alcotest.test_case "expression statements" `Quick test_parse_expression_statement
   ]
 ;;

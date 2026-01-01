@@ -119,4 +119,4 @@ let test_next_token () =
   lex lexer expected
 ;;
 
-let test_suite = [ Alcotest.test_case "small example" `Quick test_next_token ]
+let test_suite = [ Alcotest.test_case "all tokens" `Quick test_next_token ]
