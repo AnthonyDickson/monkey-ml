@@ -1,20 +1,29 @@
 type identifier = string
-type expression = Identifier of identifier | IntLiteral of int
 
-let string_of_expression = function
-  | Identifier ident -> ident
-  | IntLiteral integer -> Int.to_string integer
-;;
+module Expression = struct
+  type expression =
+    | Identifier of identifier
+    | IntLiteral of int
+    | Prefix of Token.token * expression
 
-type statement =
-  | Let of { identifier : identifier }
-  | Return
-  | Expression of expression
+  let rec to_string = function
+    | Identifier ident -> ident
+    | IntLiteral integer -> Int.to_string integer
+    | Prefix (operator, expression) -> Token.to_string operator ^ to_string expression
+  ;;
+end
 
-let string_of_statement = function
-  | Let { identifier = indentifier' } -> Printf.sprintf "let %s = _" indentifier'
-  | Return -> "return _"
-  | Expression expr -> string_of_expression expr
-;;
+module Statement = struct
+  type statement =
+    | Let of { identifier : identifier }
+    | Return
+    | Expression of Expression.expression
 
-type program = statement list
+  let to_string = function
+    | Let { identifier = indentifier' } -> Printf.sprintf "let %s = _" indentifier'
+    | Return -> "return _"
+    | Expression expr -> Expression.to_string expr
+  ;;
+end
+
+type program = Statement.statement list

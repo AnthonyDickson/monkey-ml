@@ -1,9 +1,9 @@
 open Monkeylang
+open Monkeylang.Ast
 
 let statement_testable =
-  let open Monkeylang in
   let pp_statement fmt statement =
-    Format.pp_print_string fmt (Ast.string_of_statement statement)
+    Format.pp_print_string fmt (Statement.to_string statement)
   in
   Alcotest.testable pp_statement ( = )
 ;;
@@ -37,9 +37,9 @@ let test_parse_let_statement () =
     |}
   in
   let expected_program =
-    [ Ast.Let { identifier = "x" }
-    ; Ast.Let { identifier = "y" }
-    ; Ast.Let { identifier = "foobar" }
+    [ Statement.Let { identifier = "x" }
+    ; Statement.Let { identifier = "y" }
+    ; Statement.Let { identifier = "foobar" }
     ]
   in
   let lexer = Result.get_ok @@ Lexer.create input in
@@ -57,7 +57,7 @@ let test_parse_return_statement () =
       return add(15);
     |}
   in
-  let expected_program = [ Ast.Return; Ast.Return; Ast.Return ] in
+  let expected_program = [ Statement.Return; Statement.Return; Statement.Return ] in
   let lexer = Result.get_ok @@ Lexer.create input in
   let parser = Parser.create lexer in
   match Parser.parse_program parser with
@@ -70,9 +70,17 @@ let test_parse_expression_statement () =
     {|
       foobar;
       5;
+      !5;
+      -15;
     |}
   in
-  let expected_program = [ Ast.Expression (Identifier "foobar"); Ast.Expression (IntLiteral 5) ] in
+  let expected_program =
+    [ Statement.Expression (Expression.Identifier "foobar")
+    ; Statement.Expression (Expression.IntLiteral 5)
+    ; Statement.Expression (Expression.Prefix (Token.Bang, Expression.IntLiteral 5))
+    ; Statement.Expression (Expression.Prefix (Token.Minus, Expression.IntLiteral 15))
+    ]
+  in
   let lexer = Result.get_ok @@ Lexer.create input in
   let parser = Parser.create lexer in
   match Parser.parse_program parser with

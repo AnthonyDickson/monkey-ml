@@ -1,3 +1,5 @@
+open Ast
+
 (* TODO: When OCaml 5.4.0 is available through NixPkgs, upgrade and replace
 below let statement with `open Result.Syntax` *)
 let ( let* ) = Result.bind
@@ -54,33 +56,37 @@ let parse_let_statement parser =
   let* parser = Ok (advance parser) in
   let* () = expect_peek_token parser Token.Assign in
   let* parser = Ok (advance_while parser (fun token -> token <> Token.Semicolon)) in
-  Ok (Ast.Let { identifier }, parser)
+  Ok (Statement.Let { identifier }, parser)
 ;;
 
 let parse_return_statement parser =
   let* parser = Ok (advance parser) in
   let* parser = Ok (advance_while parser (fun token -> token <> Token.Semicolon)) in
-  Ok (Ast.Return, parser)
+  Ok (Statement.Return, parser)
 ;;
 
-let parse_prefix parser =
-  match parser.curr_token with
-  | Token.Ident identifier -> Ok (Ast.Identifier identifier, parser)
-  | Token.Int integer -> Ok (Ast.IntLiteral integer, parser)
-  | token -> Error (Printf.sprintf "unexpected prefix token %s" (Token.to_string token))
-;;
+type precedence =
+  | Lowest
+  (* TODO *)
+  (* | Equals (* == *) *)
+  (* | LessGreater (* < or > *) *)
+  (* | Sum (* + *) *)
+  (* | Product (* * *) *)
+  (* -x or !x *)
+  | Prefix
+  (* | Call (* myFunction() *) *)
 
-type precedence = Lowest
-(* TODO *)
-(* | Equals (* == *) *)
-(* | LessGreater (* < or > *) *)
-(* | Sum (* + *) *)
-(* | Product (* * *) *)
-(* | Prefix (* -x or !x *) *)
-(* | Call (* myFunction() *) *)
-
-let parse_expression parser _precedence =
-  parse_prefix parser
+let parse_expression parser precedence =
+  let rec parse_expr parser _precednce =
+    match parser.curr_token with
+    | Token.Ident identifier -> Ok (Expression.Identifier identifier, parser)
+    | Token.Int integer -> Ok (Expression.IntLiteral integer, parser)
+    | (Token.Minus | Token.Bang) as operator ->
+      let* rhs, parser = parse_expr (advance parser) Prefix in
+      Ok (Expression.Prefix (operator, rhs), parser)
+    | token -> Error (Printf.sprintf "unexpected prefix token %s" (Token.to_string token))
+  in
+  parse_expr parser precedence
   |> Result.map_error
        (Printf.sprintf
           "could not parse expression starting with token %s: %s"
@@ -90,7 +96,7 @@ let parse_expression parser _precedence =
 let parse_expression_statement parser =
   let* expression, parser = parse_expression parser Lowest in
   let parser = if parser.next_token == Token.Semicolon then advance parser else parser in
-  Ok (Ast.Expression expression, parser)
+  Ok (Statement.Expression expression, parser)
 ;;
 
 let parse_statement parser =
