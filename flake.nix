@@ -1,5 +1,5 @@
 {
-  description = "Zig Dev Environment";
+  description = "OCaml Dev Environment";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -18,8 +18,8 @@
           mkShell {
             packages = with pkgs; [
               ocaml
+              dune_3
               ocamlPackages.utop
-              ocamlPackages.dune_3
               ocamlPackages.odoc
               ocamlPackages.ocaml-lsp
               ocamlPackages.ocamlformat
