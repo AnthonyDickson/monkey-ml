@@ -46,6 +46,18 @@ let test_parse_return_statement () =
   run_parser_tests tests Ast.Statement.to_string
 ;;
 
+let test_parse_if_expression () =
+  let tests =
+    [ "if (x < y) { x }", "(if ((x < y)) { x })"
+    ; "if (x < y) { x * y } else { y + 314159 }", "(if ((x < y)) { (x * y) } else { (y + 314159) })"
+    ]
+  in
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
+;;
+
 let test_parse_literal_expression () =
   let tests = [ "foobar;", "foobar"; "5;", "5"; "true;", "true"; "false;", "false" ] in
   run_parser_tests tests (fun statement ->
@@ -118,6 +130,7 @@ let test_operator_precedence () =
 let test_suite =
   [ Alcotest.test_case "let statements" `Quick test_parse_let_statement
   ; Alcotest.test_case "return statements" `Quick test_parse_return_statement
+  ; Alcotest.test_case "if expression" `Quick test_parse_if_expression
   ; Alcotest.test_case
       "literal expression statements"
       `Quick

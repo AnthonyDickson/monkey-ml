@@ -56,13 +56,52 @@ module InfixOp = struct
   let to_string operator = operator |> to_token |> Token.to_string
 end
 
-module Expression = struct
+module rec Statement : sig
+  type t =
+    | Let of { identifier : identifier }
+    | Return
+    | Expression of Expression.t
+
+  val to_string : t -> string
+end = struct
+  type t =
+    | Let of { identifier : identifier }
+    | Return
+    | Expression of Expression.t
+
+  let to_string = function
+    | Let { identifier = indentifier' } -> Printf.sprintf "let %s = _" indentifier'
+    | Return -> "return _"
+    | Expression expr -> Expression.to_string expr
+  ;;
+end
+
+and Expression : sig
   type t =
     | Identifier of identifier
     | IntLiteral of int
     | BoolLiteral of bool
     | Prefix of PrefixOp.t * t
     | Infix of t * InfixOp.t * t
+    | If of
+        { condition : t
+        ; consequence : Statement.t list
+        ; alternative : Statement.t list option
+        }
+
+  val to_string : t -> string
+end = struct
+  type t =
+    | Identifier of identifier
+    | IntLiteral of int
+    | BoolLiteral of bool
+    | Prefix of PrefixOp.t * t
+    | Infix of t * InfixOp.t * t
+    | If of
+        { condition : t
+        ; consequence : Statement.t list
+        ; alternative : Statement.t list option
+        }
 
   let rec to_string = function
     | Identifier ident -> ident
@@ -76,19 +115,16 @@ module Expression = struct
         (to_string lhs)
         (InfixOp.to_string operator)
         (to_string rhs)
-  ;;
-end
-
-module Statement = struct
-  type t =
-    | Let of { identifier : identifier }
-    | Return
-    | Expression of Expression.t
-
-  let to_string = function
-    | Let { identifier = indentifier' } -> Printf.sprintf "let %s = _" indentifier'
-    | Return -> "return _"
-    | Expression expr -> Expression.to_string expr
+    | If { condition; consequence; alternative } ->
+      let condition = to_string condition
+      and consequence = String.concat "; " (List.map Statement.to_string consequence) in
+      (match alternative with
+       | Some expressions ->
+         let alternative =
+           String.concat "; " (List.map Statement.to_string expressions)
+         in
+         Printf.sprintf "(if (%s) { %s } else { %s })" condition consequence alternative
+       | None -> Printf.sprintf "(if (%s) { %s })" condition consequence)
   ;;
 end
 

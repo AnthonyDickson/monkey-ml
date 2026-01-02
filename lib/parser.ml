@@ -63,7 +63,25 @@ let parse_return_statement parser =
   Ok (Ast.Statement.Return, parser)
 ;;
 
-let rec parse_expression parser precedence =
+let rec parse_statement parser =
+  match parser.curr_token with
+  | Token.Let -> parse_let_statement parser
+  | Token.Return -> parse_return_statement parser
+  | _ -> parse_expression_statement parser
+
+and parse_statement_block parser statements =
+  match parser.next_token with
+  | Token.Rbrace | Token.Eof -> Ok (List.rev statements, parser)
+  | _ ->
+    let* statement, parser = parse_statement (advance parser) in
+    parse_statement_block parser (statement :: statements)
+
+and parse_expression_statement parser =
+  let* expression, parser = parse_expression parser Precedence.Lowest in
+  let parser = if parser.next_token = Token.Semicolon then advance parser else parser in
+  Ok (Ast.Statement.Expression expression, parser)
+
+and parse_expression parser precedence =
   let* left, parser = prefix parser in
   match infix parser precedence left with
   | Ok result -> Ok result
@@ -77,12 +95,44 @@ and prefix parser =
   | Token.False -> Ok (Ast.Expression.BoolLiteral false, parser)
   | Token.Lparen -> parse_grouped_expression parser
   | (Token.Minus | Token.Bang) as operator -> parse_prefix_expression parser operator
-  | token -> Error (Printf.sprintf "unexpected prefix token %s" (Token.to_string token))
+  | Token.If -> parse_if_expression parser
+  | token ->
+    Error
+      (Printf.sprintf
+         "unexpected prefix token \"%s\", next token is: %s"
+         (Token.to_string token)
+         (Token.to_string parser.next_token))
 
 and parse_grouped_expression parser =
   let* expression, parser = parse_expression (advance parser) Precedence.Lowest in
   let* () = expect_peek_token parser Token.Rparen in
   Ok (expression, advance parser)
+
+and parse_if_expression parser =
+  let parse_branch parser =
+    let* () = expect_peek_token parser Token.Lbrace in
+    let* block, parser = parse_statement_block (advance parser) [] in
+    let* () = expect_peek_token parser Token.Rbrace in
+    Ok (block, advance parser)
+  in
+  let* () = expect_peek_token parser Token.Lparen in
+  (* Advance the parser onto the first token of the conditional expression,
+  instead of advancing once onto the left parenthesis.
+  This prevents the parser parsing the condition as a grouped expression.
+  Even though this would likely produce an equivalent output, it is a strictly
+  incorrect conflation of the grouped expressions and the if condition. *)
+  let parser = advance (advance parser) in
+  let* condition, parser = parse_expression parser Precedence.Lowest in
+  let* () = expect_peek_token parser Token.Rparen in
+  let* consequence, parser = parse_branch (advance parser) in
+  let* alternative, parser =
+    match parser.next_token with
+    | Token.Else ->
+      let* alt, parser = parse_branch (advance parser) in
+      Ok (Some alt, parser)
+    | _ -> Ok (None, parser)
+  in
+  Ok (Ast.Expression.If { condition; consequence; alternative }, parser)
 
 and parse_prefix_expression parser operator =
   let* rhs, parser = parse_expression (advance parser) Precedence.Prefix in
@@ -105,19 +155,6 @@ and parse_infix_expression parser lhs operator =
   let* rhs, parser = parse_expression (advance parser) precedence in
   let operator = Ast.InfixOp.from_token operator in
   Ok (Ast.Expression.Infix (lhs, operator, rhs), parser)
-;;
-
-let parse_expression_statement parser =
-  let* expression, parser = parse_expression parser Precedence.Lowest in
-  let parser = if parser.next_token = Token.Semicolon then advance parser else parser in
-  Ok (Ast.Statement.Expression expression, parser)
-;;
-
-let parse_statement parser =
-  match parser.curr_token with
-  | Token.Let -> parse_let_statement parser
-  | Token.Return -> parse_return_statement parser
-  | _ -> parse_expression_statement parser
 ;;
 
 let format_errors errors =
