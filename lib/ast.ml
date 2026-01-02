@@ -85,8 +85,12 @@ and Expression : sig
     | Infix of t * InfixOp.t * t
     | If of
         { condition : t
-        ; consequence : Statement.t list
+        ; consequent : Statement.t list
         ; alternative : Statement.t list option
+        }
+    | Fn of
+        { arguments : identifier list
+        ; body : Statement.t list
         }
 
   val to_string : t -> string
@@ -99,8 +103,12 @@ end = struct
     | Infix of t * InfixOp.t * t
     | If of
         { condition : t
-        ; consequence : Statement.t list
+        ; consequent : Statement.t list
         ; alternative : Statement.t list option
+        }
+    | Fn of
+        { arguments : identifier list
+        ; body : Statement.t list
         }
 
   let rec to_string = function
@@ -115,9 +123,9 @@ end = struct
         (to_string lhs)
         (InfixOp.to_string operator)
         (to_string rhs)
-    | If { condition; consequence; alternative } ->
+    | If { condition; consequent; alternative } ->
       let condition = to_string condition
-      and consequence = String.concat "; " (List.map Statement.to_string consequence) in
+      and consequence = String.concat "; " (List.map Statement.to_string consequent) in
       (match alternative with
        | Some expressions ->
          let alternative =
@@ -125,6 +133,11 @@ end = struct
          in
          Printf.sprintf "(if (%s) { %s } else { %s })" condition consequence alternative
        | None -> Printf.sprintf "(if (%s) { %s })" condition consequence)
+    | Fn { arguments; body } ->
+      Printf.sprintf
+        "(fn (%s) { %s })"
+        (String.concat ", " arguments)
+        (String.concat "; " @@ List.map Statement.to_string body)
   ;;
 end
 

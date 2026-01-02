@@ -23,8 +23,21 @@ let run_parser_tests tests to_string =
          let actual = to_string statement in
          Alcotest.(check string) ("parse: " ^ input) expected actual
        | Ok _ -> Alcotest.failf "Expected single statement"
-       | Error msg -> Alcotest.failf "Got unexpected error: %s" msg)
+       | Error (actual, msg) ->
+         Alcotest.failf
+           "Got unexpected error for input \"%s\": %s\nOutput was: \"%s\""
+           input
+           msg
+           (String.concat "\n" (List.map to_string actual)))
     tests
+;;
+
+let test_parse_literal_expression () =
+  let tests = [ "foobar;", "foobar"; "5;", "5"; "true;", "true"; "false;", "false" ] in
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
 let test_parse_let_statement () =
@@ -49,7 +62,8 @@ let test_parse_return_statement () =
 let test_parse_if_expression () =
   let tests =
     [ "if (x < y) { x }", "(if ((x < y)) { x })"
-    ; "if (x < y) { x * y } else { y + 314159 }", "(if ((x < y)) { (x * y) } else { (y + 314159) })"
+    ; ( "if (x < y) { x * y } else { y + 314159 }"
+      , "(if ((x < y)) { (x * y) } else { (y + 314159) })" )
     ]
   in
   run_parser_tests tests (fun statement ->
@@ -58,8 +72,13 @@ let test_parse_if_expression () =
     | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
-let test_parse_literal_expression () =
-  let tests = [ "foobar;", "foobar"; "5;", "5"; "true;", "true"; "false;", "false" ] in
+let test_parse_fn_expression () =
+  let tests =
+    [ "fn(x, y) { x + y }", "(fn (x, y) { (x + y) })"
+    ; "fn() { 42 }", "(fn () { 42 })"
+    ; "fn(x, y) { let z = x + y; return z + 5; }", "(fn (x, y) { let z = _; return _ })"
+    ]
+  in
   run_parser_tests tests (fun statement ->
     match statement with
     | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
@@ -128,13 +147,14 @@ let test_operator_precedence () =
 ;;
 
 let test_suite =
-  [ Alcotest.test_case "let statements" `Quick test_parse_let_statement
-  ; Alcotest.test_case "return statements" `Quick test_parse_return_statement
-  ; Alcotest.test_case "if expression" `Quick test_parse_if_expression
-  ; Alcotest.test_case
+  [ Alcotest.test_case
       "literal expression statements"
       `Quick
       test_parse_literal_expression
+  ; Alcotest.test_case "let statements" `Quick test_parse_let_statement
+  ; Alcotest.test_case "return statements" `Quick test_parse_return_statement
+  ; Alcotest.test_case "if expression" `Quick test_parse_if_expression
+  ; Alcotest.test_case "function expression" `Quick test_parse_fn_expression
   ; Alcotest.test_case "prefix expression statements" `Quick test_parse_prefix_expression
   ; Alcotest.test_case "infix expression statements" `Quick test_parse_infix_expression
   ; Alcotest.test_case "operator precedence" `Quick test_operator_precedence

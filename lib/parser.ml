@@ -14,27 +14,6 @@ let make lexer =
   { lexer; curr_token; next_token }
 ;;
 
-let expect_peek_identifier parser =
-  match parser.next_token with
-  | Token.Ident literal -> Ok literal
-  | _ ->
-    Error
-      (Printf.sprintf
-         "expected the next token to be an identifier, got %s"
-         (Token.to_string parser.next_token))
-;;
-
-let expect_peek_token parser token =
-  if parser.next_token = token
-  then Ok ()
-  else
-    Error
-      (Printf.sprintf
-         "expected the next token to be %s, got %s"
-         (Token.to_string token)
-         (Token.to_string parser.next_token))
-;;
-
 (** Advance the parser to the next token *)
 let advance parser =
   let curr_token = parser.next_token in
@@ -49,17 +28,52 @@ let rec advance_while parser predicate =
   | _ -> parser
 ;;
 
+let expect_peek_token parser token =
+  if parser.next_token = token
+  then Ok ()
+  else
+    Error
+      (Printf.sprintf
+         "expected the token after \"%s\" to be %s, got %s"
+         (Token.to_string parser.curr_token)
+         (Token.to_string token)
+         (Token.to_string parser.next_token))
+;;
+
+let consume_token parser token =
+  if parser.curr_token = token
+  then Ok (advance parser)
+  else
+    Error
+      (Printf.sprintf
+         "expected the token %s, got %s (next is %s)"
+         (Token.to_string token)
+         (Token.to_string parser.curr_token)
+         (Token.to_string parser.next_token))
+;;
+
+let consume_identifier parser =
+  match parser.curr_token with
+  | Token.Ident identifier -> Ok (advance parser, identifier)
+  | _ ->
+    Error
+      (Printf.sprintf
+         "expected an identifier, got %s (next is %s)"
+         (Token.to_string parser.curr_token)
+         (Token.to_string parser.next_token))
+;;
+
 let parse_let_statement parser =
-  let* identifier = expect_peek_identifier parser in
-  let parser = advance parser in
-  let* () = expect_peek_token parser Token.Assign in
+  let* parser= consume_token parser Token.Let in
+  let* parser, identifier = consume_identifier parser in
+  let* parser = consume_token parser Token.Assign in
   (* TODO: Parse expression instead of skipping over it. *)
   let parser = advance_while parser (fun token -> token <> Token.Semicolon) in
   Ok (parser, Ast.Statement.Let { identifier })
 ;;
 
 let parse_return_statement parser =
-  let parser = advance parser in
+  let* parser = consume_token parser Token.Return in
   (* TODO: Parse expression instead of skipping over it. *)
   let parser = advance_while parser (fun token -> token <> Token.Semicolon) in
   Ok (parser, Ast.Statement.Return)
@@ -71,12 +85,17 @@ let rec parse_statement parser =
   | Token.Return -> parse_return_statement parser
   | _ -> parse_expression_statement parser
 
-and parse_statement_block parser statements =
-  match parser.next_token with
-  | Token.Rbrace | Token.Eof -> Ok (parser, List.rev statements)
-  | _ ->
-    let* parser, statement = parse_statement (advance parser) in
-    parse_statement_block parser (statement :: statements)
+and parse_statement_block parser =
+  let rec parse_statement_block_loop parser statements =
+    match parser.curr_token with
+    | Token.Rbrace | Token.Eof -> Ok (parser, List.rev statements)
+    | _ ->
+      let* parser, statement = parse_statement parser in
+      parse_statement_block_loop (advance parser) (statement :: statements)
+  in
+  let* parser = consume_token parser Token.Lbrace in
+  let* parser, block = parse_statement_block_loop parser [] in
+  Ok (parser, block)
 
 and parse_expression_statement parser =
   let* parser, expression = parse_expression parser Precedence.Lowest in
@@ -98,6 +117,7 @@ and prefix parser =
   | Token.Lparen -> parse_grouped_expression parser
   | (Token.Minus | Token.Bang) as operator -> parse_prefix_expression parser operator
   | Token.If -> parse_if_expression parser
+  | Token.Function -> parse_fn_expression parser
   | token ->
     Error
       (Printf.sprintf
@@ -111,30 +131,49 @@ and parse_grouped_expression parser =
   Ok (advance parser, expression)
 
 and parse_if_expression parser =
-  let parse_branch parser =
-    let* () = expect_peek_token parser Token.Lbrace in
-    let* parser, block = parse_statement_block (advance parser) [] in
-    let* () = expect_peek_token parser Token.Rbrace in
-    Ok (advance parser, block)
-  in
-  let* () = expect_peek_token parser Token.Lparen in
-  (* Advance the parser onto the first token of the conditional expression,
-     instead of advancing once onto the left parenthesis.
-     This prevents the parser parsing the condition as a grouped expression.
-     Even though this would likely produce an equivalent output, it is a strictly
-     incorrect conflation of the grouped expressions and the if condition. *)
-  let parser = advance (advance parser) in
+  let* parser = consume_token parser Token.If in
+  let* parser = consume_token parser Token.Lparen in
   let* parser, condition = parse_expression parser Precedence.Lowest in
-  let* () = expect_peek_token parser Token.Rparen in
-  let* parser, consequence = parse_branch (advance parser) in
+  let parser = advance parser in
+  let* parser = consume_token parser Token.Rparen in
+  let* parser, consequent = parse_statement_block parser in
   let* parser, alternative =
     match parser.next_token with
     | Token.Else ->
-      let* parser, alt = parse_branch (advance parser) in
+      let parser = advance parser in
+      let* () = expect_peek_token parser Token.Lbrace in
+      let* parser, alt = parse_statement_block (advance parser) in
       Ok (parser, Some alt)
     | _ -> Ok (parser, None)
   in
-  Ok (parser, Ast.Expression.If { condition; consequence; alternative })
+  Ok (parser, Ast.Expression.If { condition; consequent; alternative })
+
+and parse_fn_expression parser =
+  let rec parse_fn_args parser args =
+    match parser.curr_token with
+    | Token.Rparen | Token.Eof -> Ok (parser, List.rev args)
+    | Token.Ident identifier -> parse_fn_args (advance parser) (identifier :: args)
+    | Token.Comma ->
+      let* parser = consume_token parser Token.Comma in
+      let* parser, identifier = consume_identifier parser in
+      parse_fn_args parser (identifier :: args)
+    | token ->
+      Error
+        (Token.to_string token
+         ^ " is not allowed as a function argument, expected an identifier")
+  in
+  let* parser = consume_token parser Token.Function in
+  let* parser = consume_token parser Token.Lparen in
+  let* parser, arguments = parse_fn_args parser [] in
+  let* parser = consume_token parser Token.Rparen in
+  (* let* parser = consume_token parser Token.Lbrace in *)
+  let* parser, body = parse_statement_block parser in
+  let parser =
+    match parser.next_token with
+    | Token.Semicolon -> advance parser
+    | _ -> parser
+  in
+  Ok (parser, Ast.Expression.Fn { arguments; body })
 
 and parse_prefix_expression parser operator =
   let* parser, rhs = parse_expression (advance parser) Precedence.Prefix in
@@ -187,7 +226,7 @@ let parse_program parser =
     | Token.Eof ->
       if errors = []
       then Ok (List.rev statements)
-      else Error (format_errors (List.rev errors))
+      else Error (List.rev statements, format_errors (List.rev errors))
     | _ ->
       (match parse_statement parser with
        | Ok (parser', statement) ->
