@@ -115,7 +115,7 @@ let test_next_token () =
       Alcotest.(check token_testable) "same token" expected_token token;
       lex ll t
   in
-  let lexer = Result.get_ok @@ Lexer.create input in
+  let lexer = Result.get_ok @@ Lexer.make input in
   lex lexer expected
 ;;
 

@@ -1,4 +1,4 @@
-type lexer
+type t
 
-val create : string -> (lexer, string) result
-val next_token : lexer -> Token.token * lexer
+val make : string -> (t, string) result
+val next_token : t -> Token.t * t

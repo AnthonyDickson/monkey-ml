@@ -1,4 +1,4 @@
-type parser
+type t
 
-val create : Lexer.lexer -> parser
-val parse_program:  parser -> (Ast.program, string) result
+val make : Lexer.t -> t
+val parse_program : t -> (Ast.program, string) result

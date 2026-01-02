@@ -1,4 +1,4 @@
-type lexer =
+type t =
   { input : string (** [input] is the text to parse. *)
   ; position : int (** The current position in [input], points to [ch] *)
   ; read_position : int
@@ -6,7 +6,7 @@ type lexer =
   ; current_char : char option (** The current char that is being processed *)
   }
 
-let create input =
+let make input =
   if String.length input = 0
   then Error "Input must be a non-zero length string"
   else Ok { input; position = 0; read_position = 1; current_char = Some input.[0] }
@@ -40,7 +40,7 @@ let is_whitespace = function
   | _ -> false
 ;;
 
-let keyword_of_string = function
+let keyword_or_identifier_of_string = function
   | "fn" -> Token.Function
   | "let" -> Token.Let
   | "if" -> Token.If
@@ -66,7 +66,7 @@ let read_multichar_token_and_advance lexer is_valid token_of_literal =
 ;;
 
 let read_identifier_and_advance lexer =
-  read_multichar_token_and_advance lexer is_letter keyword_of_string
+  read_multichar_token_and_advance lexer is_letter keyword_or_identifier_of_string
 ;;
 
 let is_digit = function

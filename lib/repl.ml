@@ -10,7 +10,7 @@ let rec start () =
       loop lexer''
   in
   let line = read_line () in
-  let lexer = Lexer.create line in
+  let lexer = Lexer.make line in
   match lexer with
   | Ok lexer -> loop lexer
   | Error msg ->

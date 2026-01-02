@@ -1,4 +1,4 @@
-type token =
+type t =
   | Illegal of char
   | Eof
   (* Identifiers + literals *)
@@ -34,29 +34,29 @@ type token =
 let to_string = function
   | Illegal ch -> Printf.sprintf "Illegal %c" ch
   | Eof -> "Eof"
-  | Ident literal -> Printf.sprintf "Ident %s" literal
-  | Int literal -> Printf.sprintf "Int %d" literal
-  | True -> "True"
-  | False -> "False"
-  | Assign -> "Assign"
-  | Plus -> "Plus"
-  | Minus -> "Minus"
-  | Asterisk -> "Asterisk"
-  | Slash -> "Slash"
-  | Bang -> "Bang"
-  | Lt -> "Lt"
-  | Gt -> "Gt"
-  | Eq -> "Eq"
-  | NotEq -> "NotEq"
-  | Comma -> "Comma"
-  | Semicolon -> "Semicolon"
-  | Lparen -> "Lparen"
-  | Rparen -> "Rparen"
-  | Lbrace -> "Lbrace"
-  | Rbrace -> "Rbrace"
-  | Function -> "Function"
-  | Let -> "Let"
-  | If -> "If"
-  | Else -> "Else"
-  | Return -> "Return"
+  | Ident literal -> literal
+  | Int literal -> Int.to_string literal
+  | True -> "true"
+  | False -> "false"
+  | Assign -> "="
+  | Plus -> "+"
+  | Minus -> "-"
+  | Asterisk -> "*"
+  | Slash -> "/"
+  | Bang -> "!"
+  | Lt -> "<"
+  | Gt -> ">"
+  | Eq -> "=="
+  | NotEq -> "!="
+  | Comma -> ","
+  | Semicolon -> ";"
+  | Lparen -> "("
+  | Rparen -> ")"
+  | Lbrace -> "{"
+  | Rbrace -> "}"
+  | Function -> "fn"
+  | Let -> "let"
+  | If -> "if"
+  | Else -> "else"
+  | Return -> "return"
 ;;
