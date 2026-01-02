@@ -73,6 +73,8 @@ and prefix parser =
   match parser.curr_token with
   | Token.Ident identifier -> Ok (Ast.Expression.Identifier identifier, parser)
   | Token.Int integer -> Ok (Ast.Expression.IntLiteral integer, parser)
+  | Token.True -> Ok (Ast.Expression.BoolLiteral true, parser)
+  | Token.False -> Ok (Ast.Expression.BoolLiteral false, parser)
   | (Token.Minus | Token.Bang) as operator ->
     let operator = Ast.PrefixOp.from_token operator in
     parse_prefix_expression parser operator

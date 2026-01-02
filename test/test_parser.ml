@@ -34,12 +34,16 @@ let test_parse_let_statement () =
       let x = 5;
       let y = 10;
       let foobar = 838383;
+      let foobar = true;
+      let barfoo = false;
     |}
   in
   let expected_program =
     [ Ast.Statement.Let { identifier = "x" }
     ; Ast.Statement.Let { identifier = "y" }
     ; Ast.Statement.Let { identifier = "foobar" }
+    ; Ast.Statement.Let { identifier = "foobar" }
+    ; Ast.Statement.Let { identifier = "barfoo" }
     ]
   in
   let lexer = Result.get_ok @@ Lexer.make input in
@@ -72,11 +76,15 @@ let test_parse_literal_expression () =
     {|
       foobar;
       5;
+      true;
+      false;
     |}
   in
   let expected_program =
     [ Statement.Expression (Expression.Identifier "foobar")
     ; Statement.Expression (Expression.IntLiteral 5)
+    ; Statement.Expression (Expression.BoolLiteral true)
+    ; Statement.Expression (Expression.BoolLiteral false)
     ]
   in
   let lexer = Result.get_ok @@ Lexer.make input in
@@ -92,11 +100,17 @@ let test_parse_prefix_expression () =
     {|
       !5;
       -15;
+      !true;
+      !false;
     |}
   in
   let expected_program =
     [ Statement.Expression (Expression.Prefix (PrefixOp.Bang, Expression.IntLiteral 5))
     ; Statement.Expression (Expression.Prefix (PrefixOp.Minus, Expression.IntLiteral 15))
+    ; Statement.Expression
+        (Expression.Prefix (PrefixOp.Bang, Expression.BoolLiteral true))
+    ; Statement.Expression
+        (Expression.Prefix (PrefixOp.Bang, Expression.BoolLiteral false))
     ]
   in
   let lexer = Result.get_ok @@ Lexer.make input in
@@ -118,6 +132,9 @@ let test_parse_infix_expression () =
       5 < 5;
       5 == 5;
       5 != 5;
+      true == true;
+      false == false;
+      false != true;
     |}
   in
   let five = Expression.IntLiteral 5 in
@@ -131,6 +148,15 @@ let test_parse_infix_expression () =
     ; Statement.Expression (make_infix InfixOp.Lt)
     ; Statement.Expression (make_infix InfixOp.Eq)
     ; Statement.Expression (make_infix InfixOp.NotEq)
+    ; Statement.Expression
+        (Expression.Infix
+           (Expression.BoolLiteral true, InfixOp.Eq, Expression.BoolLiteral true))
+    ; Statement.Expression
+        (Expression.Infix
+           (Expression.BoolLiteral false, InfixOp.Eq, Expression.BoolLiteral false))
+    ; Statement.Expression
+        (Expression.Infix
+           (Expression.BoolLiteral false, InfixOp.NotEq, Expression.BoolLiteral true))
     ]
   in
   let lexer = Result.get_ok @@ Lexer.make input in
@@ -142,10 +168,12 @@ let test_parse_infix_expression () =
 
 let test_operator_precedence () =
   let tests =
+    (* input, expected *)
     [ "-a * b", "((-a) * b)"
     ; "!-a", "(!(-a))"
     ; "a + b + c", "((a + b) + c)"
     ; "a + b - c", "((a + b) - c)"
+    ; "a + b * -c", "(a + (b * (-c)))"
     ; "a * b * c", "((a * b) * c)"
     ; "a * b / c", "((a * b) / c)"
     ; "a + b / c", "(a + (b / c))"
@@ -153,6 +181,8 @@ let test_operator_precedence () =
     ; "5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"
     ; "5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"
     ; "3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+    ; "3 > 5 == false", "((3 > 5) == false)"
+    ; "3 < 5 == true", "((3 < 5) == true)"
     ]
   in
   List.iter

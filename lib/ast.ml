@@ -60,12 +60,14 @@ module Expression = struct
   type t =
     | Identifier of identifier
     | IntLiteral of int
+    | BoolLiteral of bool
     | Prefix of PrefixOp.t * t
     | Infix of t * InfixOp.t * t
 
   let rec to_string = function
     | Identifier ident -> ident
     | IntLiteral integer -> Int.to_string integer
+    | BoolLiteral bool -> Bool.to_string bool
     | Prefix (operator, expression) ->
       Printf.sprintf "(%s%s)" (PrefixOp.to_string operator) (to_string expression)
     | Infix (lhs, operator, rhs) ->
