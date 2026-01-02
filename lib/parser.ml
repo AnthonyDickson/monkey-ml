@@ -1,5 +1,5 @@
 (* TODO: When OCaml 5.4.0 is available through NixPkgs, upgrade and replace
-below let statement with `open Result.Syntax` *)
+   below let statement with `open Result.Syntax` *)
 let ( let* ) = Result.bind
 
 type t =
@@ -53,14 +53,16 @@ let parse_let_statement parser =
   let* identifier = expect_peek_identifier parser in
   let parser = advance parser in
   let* () = expect_peek_token parser Token.Assign in
-  let* parser = Ok (advance_while parser (fun token -> token <> Token.Semicolon)) in
-  Ok (Ast.Statement.Let { identifier }, parser)
+  (* TODO: Parse expression instead of skipping over it. *)
+  let parser = advance_while parser (fun token -> token <> Token.Semicolon) in
+  Ok (parser, Ast.Statement.Let { identifier })
 ;;
 
 let parse_return_statement parser =
   let parser = advance parser in
-  let* parser = Ok (advance_while parser (fun token -> token <> Token.Semicolon)) in
-  Ok (Ast.Statement.Return, parser)
+  (* TODO: Parse expression instead of skipping over it. *)
+  let parser = advance_while parser (fun token -> token <> Token.Semicolon) in
+  Ok (parser, Ast.Statement.Return)
 ;;
 
 let rec parse_statement parser =
@@ -71,28 +73,28 @@ let rec parse_statement parser =
 
 and parse_statement_block parser statements =
   match parser.next_token with
-  | Token.Rbrace | Token.Eof -> Ok (List.rev statements, parser)
+  | Token.Rbrace | Token.Eof -> Ok (parser, List.rev statements)
   | _ ->
-    let* statement, parser = parse_statement (advance parser) in
+    let* parser, statement = parse_statement (advance parser) in
     parse_statement_block parser (statement :: statements)
 
 and parse_expression_statement parser =
-  let* expression, parser = parse_expression parser Precedence.Lowest in
+  let* parser, expression = parse_expression parser Precedence.Lowest in
   let parser = if parser.next_token = Token.Semicolon then advance parser else parser in
-  Ok (Ast.Statement.Expression expression, parser)
+  Ok (parser, Ast.Statement.Expression expression)
 
 and parse_expression parser precedence =
-  let* left, parser = prefix parser in
+  let* parser, left = prefix parser in
   match infix parser precedence left with
   | Ok result -> Ok result
-  | Error _ -> Ok (left, parser)
+  | Error _ -> Ok (parser, left)
 
 and prefix parser =
   match parser.curr_token with
-  | Token.Ident identifier -> Ok (Ast.Expression.Identifier identifier, parser)
-  | Token.Int integer -> Ok (Ast.Expression.IntLiteral integer, parser)
-  | Token.True -> Ok (Ast.Expression.BoolLiteral true, parser)
-  | Token.False -> Ok (Ast.Expression.BoolLiteral false, parser)
+  | Token.Ident identifier -> Ok (parser, Ast.Expression.Identifier identifier)
+  | Token.Int integer -> Ok (parser, Ast.Expression.IntLiteral integer)
+  | Token.True -> Ok (parser, Ast.Expression.BoolLiteral true)
+  | Token.False -> Ok (parser, Ast.Expression.BoolLiteral false)
   | Token.Lparen -> parse_grouped_expression parser
   | (Token.Minus | Token.Bang) as operator -> parse_prefix_expression parser operator
   | Token.If -> parse_if_expression parser
@@ -104,40 +106,40 @@ and prefix parser =
          (Token.to_string parser.next_token))
 
 and parse_grouped_expression parser =
-  let* expression, parser = parse_expression (advance parser) Precedence.Lowest in
+  let* parser, expression = parse_expression (advance parser) Precedence.Lowest in
   let* () = expect_peek_token parser Token.Rparen in
-  Ok (expression, advance parser)
+  Ok (advance parser, expression)
 
 and parse_if_expression parser =
   let parse_branch parser =
     let* () = expect_peek_token parser Token.Lbrace in
-    let* block, parser = parse_statement_block (advance parser) [] in
+    let* parser, block = parse_statement_block (advance parser) [] in
     let* () = expect_peek_token parser Token.Rbrace in
-    Ok (block, advance parser)
+    Ok (advance parser, block)
   in
   let* () = expect_peek_token parser Token.Lparen in
   (* Advance the parser onto the first token of the conditional expression,
-  instead of advancing once onto the left parenthesis.
-  This prevents the parser parsing the condition as a grouped expression.
-  Even though this would likely produce an equivalent output, it is a strictly
-  incorrect conflation of the grouped expressions and the if condition. *)
+     instead of advancing once onto the left parenthesis.
+     This prevents the parser parsing the condition as a grouped expression.
+     Even though this would likely produce an equivalent output, it is a strictly
+     incorrect conflation of the grouped expressions and the if condition. *)
   let parser = advance (advance parser) in
-  let* condition, parser = parse_expression parser Precedence.Lowest in
+  let* parser, condition = parse_expression parser Precedence.Lowest in
   let* () = expect_peek_token parser Token.Rparen in
-  let* consequence, parser = parse_branch (advance parser) in
-  let* alternative, parser =
+  let* parser, consequence = parse_branch (advance parser) in
+  let* parser, alternative =
     match parser.next_token with
     | Token.Else ->
-      let* alt, parser = parse_branch (advance parser) in
-      Ok (Some alt, parser)
-    | _ -> Ok (None, parser)
+      let* parser, alt = parse_branch (advance parser) in
+      Ok (parser, Some alt)
+    | _ -> Ok (parser, None)
   in
-  Ok (Ast.Expression.If { condition; consequence; alternative }, parser)
+  Ok (parser, Ast.Expression.If { condition; consequence; alternative })
 
 and parse_prefix_expression parser operator =
-  let* rhs, parser = parse_expression (advance parser) Precedence.Prefix in
+  let* parser, rhs = parse_expression (advance parser) Precedence.Prefix in
   let operator = Ast.PrefixOp.from_token operator in
-  Ok (Ast.Expression.Prefix (operator, rhs), parser)
+  Ok (parser, Ast.Expression.Prefix (operator, rhs))
 
 and infix parser precedence lhs =
   let open Token in
@@ -146,15 +148,15 @@ and infix parser precedence lhs =
   match next_token with
   | (Eq | NotEq | Lt | Gt | Plus | Minus | Asterisk | Slash) as operator
     when Precedence.binds_tighter precedence next_precedence ->
-    let* expression, parser = parse_infix_expression (advance parser) lhs operator in
+    let* parser, expression = parse_infix_expression (advance parser) lhs operator in
     infix parser precedence expression
-  | _ -> Ok (lhs, parser)
+  | _ -> Ok (parser, lhs)
 
 and parse_infix_expression parser lhs operator =
   let precedence = Precedence.from_token operator in
-  let* rhs, parser = parse_expression (advance parser) precedence in
+  let* parser, rhs = parse_expression (advance parser) precedence in
   let operator = Ast.InfixOp.from_token operator in
-  Ok (Ast.Expression.Infix (lhs, operator, rhs), parser)
+  Ok (parser, Ast.Expression.Infix (lhs, operator, rhs))
 ;;
 
 let format_errors errors =
@@ -188,7 +190,7 @@ let parse_program parser =
       else Error (format_errors (List.rev errors))
     | _ ->
       (match parse_statement parser with
-       | Ok (statement, parser') ->
+       | Ok (parser', statement) ->
          loop (advance parser') (statement :: statements) errors
        | Error error ->
          let parser' = recover_to_next_statement parser in
