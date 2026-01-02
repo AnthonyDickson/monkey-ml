@@ -120,17 +120,35 @@ let format_errors errors =
     (String.concat "\n" errors)
 ;;
 
+let recover_to_next_statement parser =
+  let is_start_of_statement = function
+    | Token.Let | Token.Return | Token.Eof -> true
+    | _ -> false
+  in
+  let rec skip parser =
+    match parser.curr_token with
+    | Token.Eof -> parser
+    | Token.Semicolon -> advance parser
+    | token when is_start_of_statement token -> parser
+    | _ -> skip (advance parser)
+  in
+  skip (advance parser)
+;;
+
 let parse_program parser =
-  let rec loop parser program errors =
+  let rec loop parser statements errors =
     match parser.curr_token with
     | Token.Eof ->
       if errors = []
-      then Ok (List.rev program)
-      else Error (format_errors @@ List.rev errors)
+      then Ok (List.rev statements)
+      else Error (format_errors (List.rev errors))
     | _ ->
       (match parse_statement parser with
-       | Ok (statement, parser') -> loop (advance parser') (statement :: program) errors
-       | Error error -> loop (advance parser) program (error :: errors))
+       | Ok (statement, parser') ->
+         loop (advance parser') (statement :: statements) errors
+       | Error error ->
+         let parser' = recover_to_next_statement parser in
+         loop parser' statements (error :: errors))
   in
   loop parser [] []
 ;;
