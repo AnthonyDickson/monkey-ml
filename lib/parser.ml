@@ -75,13 +75,18 @@ and prefix parser =
   | Token.Int integer -> Ok (Ast.Expression.IntLiteral integer, parser)
   | Token.True -> Ok (Ast.Expression.BoolLiteral true, parser)
   | Token.False -> Ok (Ast.Expression.BoolLiteral false, parser)
-  | (Token.Minus | Token.Bang) as operator ->
-    let operator = Ast.PrefixOp.from_token operator in
-    parse_prefix_expression parser operator
+  | Token.Lparen -> parse_grouped_expression parser
+  | (Token.Minus | Token.Bang) as operator -> parse_prefix_expression parser operator
   | token -> Error (Printf.sprintf "unexpected prefix token %s" (Token.to_string token))
+
+and parse_grouped_expression parser =
+  let* expression, parser = parse_expression (advance parser) Precedence.Lowest in
+  let* () = expect_peek_token parser Token.Rparen in
+  Ok (expression, advance parser)
 
 and parse_prefix_expression parser operator =
   let* rhs, parser = parse_expression (advance parser) Precedence.Prefix in
+  let operator = Ast.PrefixOp.from_token operator in
   Ok (Ast.Expression.Prefix (operator, rhs), parser)
 
 and infix parser precedence lhs =
