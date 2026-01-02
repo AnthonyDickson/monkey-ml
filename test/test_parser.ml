@@ -13,157 +13,76 @@ let token_testable =
   Alcotest.testable pp_token ( = )
 ;;
 
-let check_same_statement_count expected actual =
-  Printf.eprintf "%s" (String.concat "\n" (List.map Ast.Statement.to_string actual));
-  Alcotest.(check int) "same statement count" (List.length expected) (List.length actual)
-;;
-
-let check_same_statements expected actual =
-  check_same_statement_count expected actual;
-  List.combine expected actual
-  |> List.iter (fun (expected_statement, actual_statement) ->
-    Alcotest.(check statement_testable)
-      "same statement"
-      expected_statement
-      actual_statement)
+let run_parser_tests tests to_string =
+  List.iter
+    (fun (input, expected) ->
+       let lexer = Result.get_ok @@ Lexer.make input in
+       let parser = Parser.make lexer in
+       match Parser.parse_program parser with
+       | Ok [ statement ] ->
+         let actual = to_string statement in
+         Alcotest.(check string) ("parse: " ^ input) expected actual
+       | Ok _ -> Alcotest.failf "Expected single statement"
+       | Error msg -> Alcotest.failf "Got unexpected error: %s" msg)
+    tests
 ;;
 
 let test_parse_let_statement () =
-  let input =
-    {|
-      let x = 5;
-      let y = 10;
-      let foobar = 838383;
-      let foobar = true;
-      let barfoo = false;
-    |}
-  in
-  let expected_program =
-    [ Ast.Statement.Let { identifier = "x" }
-    ; Ast.Statement.Let { identifier = "y" }
-    ; Ast.Statement.Let { identifier = "foobar" }
-    ; Ast.Statement.Let { identifier = "foobar" }
-    ; Ast.Statement.Let { identifier = "barfoo" }
+  let tests =
+    [ "let x = 5;", "let x = _"
+    ; "let y = 10;", "let y = _"
+    ; "let foobar = 838383;", "let foobar = _"
+    ; "let foobar = true;", "let foobar = _"
+    ; "let barfoo = false;", "let barfoo = _"
     ]
   in
-  let lexer = Result.get_ok @@ Lexer.make input in
-  let parser = Parser.make lexer in
-  match Parser.parse_program parser with
-  | Ok actual_program -> check_same_statements expected_program actual_program
-  | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
+  run_parser_tests tests Ast.Statement.to_string
 ;;
 
 let test_parse_return_statement () =
-  let open Ast in
-  let input =
-    {|
-      return 5;
-      return 10;
-      return add(15);
-    |}
+  let tests =
+    [ "return 5;", "return _"; "return 10;", "return _"; "return add(15);", "return _" ]
   in
-  let expected_program = [ Statement.Return; Statement.Return; Statement.Return ] in
-  let lexer = Result.get_ok @@ Lexer.make input in
-  let parser = Parser.make lexer in
-  match Parser.parse_program parser with
-  | Ok actual_program -> check_same_statements expected_program actual_program
-  | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
+  run_parser_tests tests Ast.Statement.to_string
 ;;
 
 let test_parse_literal_expression () =
-  let open Ast in
-  let input =
-    {|
-      foobar;
-      5;
-      true;
-      false;
-    |}
-  in
-  let expected_program =
-    [ Statement.Expression (Expression.Identifier "foobar")
-    ; Statement.Expression (Expression.IntLiteral 5)
-    ; Statement.Expression (Expression.BoolLiteral true)
-    ; Statement.Expression (Expression.BoolLiteral false)
-    ]
-  in
-  let lexer = Result.get_ok @@ Lexer.make input in
-  let parser = Parser.make lexer in
-  match Parser.parse_program parser with
-  | Ok actual_program -> check_same_statements expected_program actual_program
-  | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
+  let tests = [ "foobar;", "foobar"; "5;", "5"; "true;", "true"; "false;", "false" ] in
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
 let test_parse_prefix_expression () =
-  let open Ast in
-  let input =
-    {|
-      !5;
-      -15;
-      !true;
-      !false;
-    |}
+  let tests =
+    [ "!5;", "(!5)"; "-15;", "(-15)"; "!true;", "(!true)"; "!false;", "(!false)" ]
   in
-  let expected_program =
-    [ Statement.Expression (Expression.Prefix (PrefixOp.Bang, Expression.IntLiteral 5))
-    ; Statement.Expression (Expression.Prefix (PrefixOp.Minus, Expression.IntLiteral 15))
-    ; Statement.Expression
-        (Expression.Prefix (PrefixOp.Bang, Expression.BoolLiteral true))
-    ; Statement.Expression
-        (Expression.Prefix (PrefixOp.Bang, Expression.BoolLiteral false))
-    ]
-  in
-  let lexer = Result.get_ok @@ Lexer.make input in
-  let parser = Parser.make lexer in
-  match Parser.parse_program parser with
-  | Ok actual_program -> check_same_statements expected_program actual_program
-  | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
 let test_parse_infix_expression () =
-  let open Ast in
-  let input =
-    {|
-      5 + 5;
-      5 - 5;
-      5 * 5;
-      5 / 5;
-      5 > 5;
-      5 < 5;
-      5 == 5;
-      5 != 5;
-      true == true;
-      false == false;
-      false != true;
-    |}
-  in
-  let five = Expression.IntLiteral 5 in
-  let make_infix operator = Expression.Infix (five, operator, five) in
-  let expected_program =
-    [ Statement.Expression (make_infix InfixOp.Plus)
-    ; Statement.Expression (make_infix InfixOp.Minus)
-    ; Statement.Expression (make_infix InfixOp.Multiply)
-    ; Statement.Expression (make_infix InfixOp.Divide)
-    ; Statement.Expression (make_infix InfixOp.Gt)
-    ; Statement.Expression (make_infix InfixOp.Lt)
-    ; Statement.Expression (make_infix InfixOp.Eq)
-    ; Statement.Expression (make_infix InfixOp.NotEq)
-    ; Statement.Expression
-        (Expression.Infix
-           (Expression.BoolLiteral true, InfixOp.Eq, Expression.BoolLiteral true))
-    ; Statement.Expression
-        (Expression.Infix
-           (Expression.BoolLiteral false, InfixOp.Eq, Expression.BoolLiteral false))
-    ; Statement.Expression
-        (Expression.Infix
-           (Expression.BoolLiteral false, InfixOp.NotEq, Expression.BoolLiteral true))
+  let tests =
+    [ "5 + 5;", "(5 + 5)"
+    ; "5 - 5;", "(5 - 5)"
+    ; "5 * 5;", "(5 * 5)"
+    ; "5 / 5;", "(5 / 5)"
+    ; "5 > 5;", "(5 > 5)"
+    ; "5 < 5;", "(5 < 5)"
+    ; "5 == 5;", "(5 == 5)"
+    ; "5 != 5;", "(5 != 5)"
+    ; "true == true;", "(true == true)"
+    ; "false == false;", "(false == false)"
+    ; "false != true;", "(false != true)"
     ]
   in
-  let lexer = Result.get_ok @@ Lexer.make input in
-  let parser = Parser.make lexer in
-  match Parser.parse_program parser with
-  | Ok actual_program -> check_same_statements expected_program actual_program
-  | Error msg -> Alcotest.failf "Got unexpected error: %s" msg
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
 let test_operator_precedence () =
@@ -185,17 +104,10 @@ let test_operator_precedence () =
     ; "3 < 5 == true", "((3 < 5) == true)"
     ]
   in
-  List.iter
-    (fun (input, expected) ->
-       let lexer = Result.get_ok @@ Lexer.make input in
-       let parser = Parser.make lexer in
-       match Parser.parse_program parser with
-       | Ok [ Ast.Statement.Expression expr ] ->
-         let actual = Ast.Expression.to_string expr in
-         Alcotest.(check string) ("parse: " ^ input) expected actual
-       | Ok _ -> Alcotest.failf "Expected single expression statement"
-       | Error msg -> Alcotest.failf "Got unexpected error: %s" msg)
-    tests
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
 let test_suite =
