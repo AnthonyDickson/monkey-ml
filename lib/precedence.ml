@@ -26,3 +26,5 @@ let from_token token =
   | Asterisk | Slash -> Product
   | _ -> Lowest
 ;;
+
+let binds_tighter a b = to_int a < to_int b

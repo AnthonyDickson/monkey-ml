@@ -85,11 +85,10 @@ and parse_prefix_expression parser operator =
 and infix parser precedence lhs =
   let open Token in
   let next_token = parser.next_token in
-  let curr_precedence = Precedence.to_int precedence in
-  let next_precedence = Precedence.to_int @@ Precedence.from_token next_token in
+  let next_precedence = Precedence.from_token next_token in
   match next_token with
   | (Eq | NotEq | Lt | Gt | Plus | Minus | Asterisk | Slash) as operator
-    when curr_precedence < next_precedence ->
+    when Precedence.binds_tighter precedence next_precedence ->
     let* expression, parser = parse_infix_expression (advance parser) lhs operator in
     infix parser precedence expression
   | _ -> Ok (lhs, parser)
