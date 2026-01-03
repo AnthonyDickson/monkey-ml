@@ -209,7 +209,7 @@ and parse_fn_call_expression parser lhs =
   Ok (parser, Ast.Expression.Call { fn = lhs; arguments })
 ;;
 
-let format_errors errors =
+let string_of_errors errors =
   Printf.sprintf
     "Parser had %d errors:\n%s"
     (List.length errors)
@@ -237,7 +237,7 @@ let parse_program parser =
     | Token.Eof ->
       if errors = []
       then Ok (List.rev statements)
-      else Error (List.rev statements, format_errors (List.rev errors))
+      else Error (List.rev statements, string_of_errors (List.rev errors))
     | _ ->
       (match parse_statement parser with
        | Ok (parser', statement) ->

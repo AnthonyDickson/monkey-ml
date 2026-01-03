@@ -161,4 +161,8 @@ end = struct
   ;;
 end
 
-type program = Statement.t list
+module Program = struct
+  type t = Statement.t list
+
+  let to_string program = String.concat "\n" (List.map Statement.to_string program)
+end

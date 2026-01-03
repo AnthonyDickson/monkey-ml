@@ -1,19 +1,38 @@
+let ( let* ) = Result.bind
 let prompt = ">> "
 
-let rec start () =
+let monkey_face = {|
+            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+|}
+
+let loop () =
   print_string prompt;
-  let rec loop lexer' =
-    match Lexer.next_token lexer' with
-    | Token.Eof, _ -> start ()
-    | token, lexer'' ->
-      print_endline (Token.to_string token);
-      loop lexer''
-  in
   let line = read_line () in
-  let lexer = Lexer.make line in
-  match lexer with
-  | Ok lexer -> loop lexer
-  | Error msg ->
-    print_endline msg;
+  let* lexer = Lexer.make line in
+  let parser = Parser.make lexer in
+  match Parser.parse_program parser with
+  | Ok program ->
+    print_endline (Ast.Program.to_string program);
+    Ok ()
+  | Error (_, errors) -> Error errors
+;;
+
+let rec start () =
+  match loop () with
+  | Ok () -> start ()
+  | Error error ->
+    print_endline monkey_face;
+    print_endline "Woops! We ran into some monkey business here!";
+    Printf.printf "%s\n" error;
     start ()
 ;;
