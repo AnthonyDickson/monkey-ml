@@ -4,9 +4,8 @@ type t =
   | LessGreater (* < or > *)
   | Sum (* + *)
   | Product (* * *)
-  | Prefix
-(* -x or !x *)
-(* TODO: | Call (* myFunction() *) *)
+  | Prefix (* -x or !x *)
+  | Call (* myFunction() *)
 
 let to_int = function
   | Lowest -> 0
@@ -15,6 +14,7 @@ let to_int = function
   | Sum -> 3
   | Product -> 4
   | Prefix -> 5
+  | Call -> 6
 ;;
 
 let from_token token =
@@ -24,6 +24,7 @@ let from_token token =
   | Lt | Gt -> LessGreater
   | Plus | Minus -> Sum
   | Asterisk | Slash -> Product
+  | Lparen -> Call
   | _ -> Lowest
 ;;
 

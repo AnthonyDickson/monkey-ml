@@ -64,7 +64,7 @@ let consume_identifier parser =
 ;;
 
 let parse_let_statement parser =
-  let* parser= consume_token parser Token.Let in
+  let* parser = consume_token parser Token.Let in
   let* parser, identifier = consume_identifier parser in
   let* parser = consume_token parser Token.Assign in
   (* TODO: Parse expression instead of skipping over it. *)
@@ -189,6 +189,9 @@ and infix parser precedence lhs =
     when Precedence.binds_tighter precedence next_precedence ->
     let* parser, expression = parse_infix_expression (advance parser) lhs operator in
     infix parser precedence expression
+  | Lparen when Precedence.binds_tighter precedence next_precedence ->
+    let* parser, expression = parse_fn_call_expression (advance parser) lhs in
+    infix parser precedence expression
   | _ -> Ok (parser, lhs)
 
 and parse_infix_expression parser lhs operator =
@@ -196,6 +199,19 @@ and parse_infix_expression parser lhs operator =
   let* parser, rhs = parse_expression (advance parser) precedence in
   let operator = Ast.InfixOp.from_token operator in
   Ok (parser, Ast.Expression.Infix (lhs, operator, rhs))
+
+and parse_fn_call_expression parser lhs =
+  let rec loop parser args =
+    match parser.curr_token with
+    | Token.Rparen | Token.Eof -> Ok (parser, List.rev args)
+    | Token.Comma -> loop (advance parser) args
+    | _ ->
+      let* parser, expression = parse_expression parser Precedence.Lowest in
+      loop (advance parser) (expression :: args)
+  in
+  let* parser = consume_token parser Token.Lparen in
+  let* parser, arguments = loop parser [] in
+  Ok (parser, Ast.Expression.Call { fn = lhs; arguments })
 ;;
 
 let format_errors errors =

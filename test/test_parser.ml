@@ -85,6 +85,14 @@ let test_parse_fn_expression () =
     | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
+let test_parse_fn_call_expression () =
+  let tests = [ "add(1, 2 * 3, 4 + 5);", "add(1, (2 * 3), (4 + 5))" ] in
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
+;;
+
 let test_parse_prefix_expression () =
   let tests =
     [ "!5;", "(!5)"; "-15;", "(-15)"; "!true;", "(!true)"; "!false;", "(!false)" ]
@@ -138,6 +146,10 @@ let test_operator_precedence () =
     ; "2 / (5 + 5)", "(2 / (5 + 5))"
     ; "-(5 + 5)", "(-(5 + 5))"
     ; "!(true == true)", "(!(true == true))"
+    ; "a + add(b * c) + d", "((a + add((b * c))) + d)"
+    ; ( "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))"
+      , "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))" )
+    ; "add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"
     ]
   in
   run_parser_tests tests (fun statement ->
@@ -155,6 +167,7 @@ let test_suite =
   ; Alcotest.test_case "return statements" `Quick test_parse_return_statement
   ; Alcotest.test_case "if expression" `Quick test_parse_if_expression
   ; Alcotest.test_case "function expression" `Quick test_parse_fn_expression
+  ; Alcotest.test_case "function call expression" `Quick test_parse_fn_call_expression
   ; Alcotest.test_case "prefix expression statements" `Quick test_parse_prefix_expression
   ; Alcotest.test_case "infix expression statements" `Quick test_parse_infix_expression
   ; Alcotest.test_case "operator precedence" `Quick test_operator_precedence

@@ -92,6 +92,10 @@ and Expression : sig
         { arguments : identifier list
         ; body : Statement.t list
         }
+    | Call of
+        { fn : t
+        ; arguments : t list
+        }
 
   val to_string : t -> string
 end = struct
@@ -109,6 +113,10 @@ end = struct
     | Fn of
         { arguments : identifier list
         ; body : Statement.t list
+        }
+    | Call of
+        { fn : t
+        ; arguments : t list
         }
 
   let rec to_string = function
@@ -138,6 +146,11 @@ end = struct
         "(fn (%s) { %s })"
         (String.concat ", " arguments)
         (String.concat "; " @@ List.map Statement.to_string body)
+    | Call { fn; arguments } ->
+      Printf.sprintf
+        "%s(%s)"
+        (to_string fn)
+        (String.concat ", " (List.map to_string arguments))
   ;;
 end
 
