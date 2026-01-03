@@ -58,20 +58,27 @@ end
 
 module rec Statement : sig
   type t =
-    | Let of { identifier : identifier }
-    | Return
+    | Let of
+        { identifier : identifier
+        ; expression : Expression.t
+        }
+    | Return of Expression.t
     | Expression of Expression.t
 
   val to_string : t -> string
 end = struct
   type t =
-    | Let of { identifier : identifier }
-    | Return
+    | Let of
+        { identifier : identifier
+        ; expression : Expression.t
+        }
+    | Return of Expression.t
     | Expression of Expression.t
 
   let to_string = function
-    | Let { identifier = indentifier' } -> Printf.sprintf "let %s = _" indentifier'
-    | Return -> "return _"
+    | Let { identifier; expression } ->
+      Printf.sprintf "let %s = %s" identifier (Expression.to_string expression)
+    | Return expr -> Printf.sprintf "return %s" (Expression.to_string expr)
     | Expression expr -> Expression.to_string expr
   ;;
 end

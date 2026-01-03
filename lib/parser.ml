@@ -21,13 +21,6 @@ let advance parser =
   { lexer; curr_token; next_token }
 ;;
 
-let rec advance_while parser predicate =
-  match parser.curr_token with
-  | Token.Eof -> parser
-  | token when predicate token -> advance_while (advance parser) predicate
-  | _ -> parser
-;;
-
 let expect_peek_token parser token =
   if parser.next_token = token
   then Ok ()
@@ -63,20 +56,8 @@ let consume_identifier parser =
          (Token.to_string parser.next_token))
 ;;
 
-let parse_let_statement parser =
-  let* parser = consume_token parser Token.Let in
-  let* parser, identifier = consume_identifier parser in
-  let* parser = consume_token parser Token.Assign in
-  (* TODO: Parse expression instead of skipping over it. *)
-  let parser = advance_while parser (fun token -> token <> Token.Semicolon) in
-  Ok (parser, Ast.Statement.Let { identifier })
-;;
-
-let parse_return_statement parser =
-  let* parser = consume_token parser Token.Return in
-  (* TODO: Parse expression instead of skipping over it. *)
-  let parser = advance_while parser (fun token -> token <> Token.Semicolon) in
-  Ok (parser, Ast.Statement.Return)
+let consume_next_if_matches parser token =
+  if parser.next_token = token then advance parser else parser
 ;;
 
 let rec parse_statement parser =
@@ -84,6 +65,20 @@ let rec parse_statement parser =
   | Token.Let -> parse_let_statement parser
   | Token.Return -> parse_return_statement parser
   | _ -> parse_expression_statement parser
+
+and parse_let_statement parser =
+  let* parser = consume_token parser Token.Let in
+  let* parser, identifier = consume_identifier parser in
+  let* parser = consume_token parser Token.Assign in
+  let* parser, expression = parse_expression parser Precedence.Lowest in
+  let parser = consume_next_if_matches parser Token.Semicolon in
+  Ok (parser, Ast.Statement.Let { identifier; expression })
+
+and parse_return_statement parser =
+  let* parser = consume_token parser Token.Return in
+  let* parser, expression = parse_expression parser Precedence.Lowest in
+  let parser = consume_next_if_matches parser Token.Semicolon in
+  Ok (parser, Ast.Statement.Return expression)
 
 and parse_statement_block parser =
   let rec parse_statement_block_loop parser statements =
@@ -99,7 +94,7 @@ and parse_statement_block parser =
 
 and parse_expression_statement parser =
   let* parser, expression = parse_expression parser Precedence.Lowest in
-  let parser = if parser.next_token = Token.Semicolon then advance parser else parser in
+  let parser = consume_next_if_matches parser Token.Semicolon in
   Ok (parser, Ast.Statement.Expression expression)
 
 and parse_expression parser precedence =

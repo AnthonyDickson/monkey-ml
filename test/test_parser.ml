@@ -42,11 +42,11 @@ let test_parse_literal_expression () =
 
 let test_parse_let_statement () =
   let tests =
-    [ "let x = 5;", "let x = _"
-    ; "let y = 10;", "let y = _"
-    ; "let foobar = 838383;", "let foobar = _"
-    ; "let foobar = true;", "let foobar = _"
-    ; "let barfoo = false;", "let barfoo = _"
+    [ "let x = 5;", "let x = 5"
+    ; "let y = 10;", "let y = 10"
+    ; "let foobar = 838383;", "let foobar = 838383"
+    ; "let foobar = true;", "let foobar = true"
+    ; "let barfoo = false;", "let barfoo = false"
     ]
   in
   run_parser_tests tests Ast.Statement.to_string
@@ -54,7 +54,7 @@ let test_parse_let_statement () =
 
 let test_parse_return_statement () =
   let tests =
-    [ "return 5;", "return _"; "return 10;", "return _"; "return add(15);", "return _" ]
+    [ "return 5;", "return 5"; "return 10;", "return 10"; "return add(15);", "return add(15)" ]
   in
   run_parser_tests tests Ast.Statement.to_string
 ;;
@@ -76,7 +76,7 @@ let test_parse_fn_expression () =
   let tests =
     [ "fn(x, y) { x + y }", "(fn (x, y) { (x + y) })"
     ; "fn() { 42 }", "(fn () { 42 })"
-    ; "fn(x, y) { let z = x + y; return z + 5; }", "(fn (x, y) { let z = _; return _ })"
+    ; "fn(x, y) { let z = x + y; return z + 5; }", "(fn (x, y) { let z = (x + y); return (z + 5) })"
     ]
   in
   run_parser_tests tests (fun statement ->
