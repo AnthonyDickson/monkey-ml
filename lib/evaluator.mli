@@ -1,1 +1,1 @@
-val evaluate: Ast.Program.t -> (Value.t, string) result
+val evaluate : Environment.t -> Ast.Program.t -> (Environment.t * Value.t, string) result

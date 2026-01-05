@@ -13,13 +13,14 @@ let run_evaluator_tests tests =
     let* program =
       Parser.parse_program parser |> Result.map_error (fun (_program, error) -> error)
     in
-    let* value = Evaluator.evaluate program in
+    let environment = Environment.make () in
+    let* value = Evaluator.evaluate environment program in
     Ok value
   in
   List.iter
     (fun (input, expected) ->
        match run_test input with
-       | Ok actual ->
+       | Ok (_env, actual) ->
          Alcotest.(check value_testable) ("evaluate: " ^ input) expected actual
        | Error msg -> Alcotest.failf "Got unexpected error for input \"%s\": %s" input msg)
     tests
@@ -126,6 +127,18 @@ let test_evaluate_return_statement () =
   run_evaluator_tests tests
 ;;
 
+let test_evaluate_let_statement () =
+  let open Monkeylang in
+  let tests =
+    [ "let a = 5; a", Value.Integer 5
+    ; "let a = 5 * 5; a", Value.Integer 25
+    ; "let a = 5; let b = a; b", Value.Integer 5
+    ; "let a = 5; let b = a; let c = a + b + 5; c", Value.Integer 15
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
 let test_evaluate_error () =
   let open Monkeylang in
   let tests =
@@ -152,6 +165,7 @@ let test_evaluate_error () =
     ; "if (3) { true }", Value.Error "type mismatch: if (INTEGER)"
     ; "if (true - false) { true }", Value.Error "unknown operator: BOOLEAN - BOOLEAN"
     ; "8 / (5 - 5)", Value.Error "division by zero"
+    ; "foobar", Value.Error "identifier not found: foobar"
     ]
   in
   run_evaluator_tests tests
@@ -164,6 +178,7 @@ let test_suite =
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
   ; Alcotest.test_case "return statement" `Quick test_evaluate_return_statement
+  ; Alcotest.test_case "let statement" `Quick test_evaluate_let_statement
   ; Alcotest.test_case "evaluate error" `Quick test_evaluate_error
   ]
 ;;

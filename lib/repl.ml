@@ -17,25 +17,34 @@ let monkey_face =
 |}
 ;;
 
-let evaluate line =
+let read () =
+  print_string prompt;
+  read_line ()
+;;
+
+let evaluate environment line =
   let lexer = Lexer.make line in
   let parser = Parser.make lexer in
   let* program =
     Parser.parse_program parser |> Result.map_error (fun (_, errors) -> errors)
   in
-  Evaluator.evaluate program
+  Evaluator.evaluate environment program
 ;;
 
-let rec start () =
-  print_string prompt;
-  let line = read_line () in
-  match evaluate line with
-  | Ok value ->
+let rec loop environment =
+  let line = read () in
+  match evaluate environment line with
+  | Ok (environment, value) ->
     print_endline (Value.to_string value);
-    start ()
+    loop environment
   | Error error ->
     print_endline monkey_face;
     print_endline "Woops! We ran into some monkey business here!";
     Printf.printf "%s\n" error;
-    start ()
+    loop environment
+;;
+
+let start () =
+  let environment = Environment.make () in
+  loop environment
 ;;
