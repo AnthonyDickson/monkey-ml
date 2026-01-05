@@ -1,4 +1,9 @@
 (* TODO: Try eliminate use of result type, use Value.Error instead *)
+module Expression = Ast.Expression
+module InfixOp = Ast.InfixOp
+module PrefixOp = Ast.PrefixOp
+module Statement = Ast.Statement
+
 let ( let* ) = Result.bind
 
 let infix_type_mismatch lhs operator rhs =
@@ -6,7 +11,7 @@ let infix_type_mismatch lhs operator rhs =
     (Printf.sprintf
        "type mismatch: %s %s %s"
        (Value.to_type_string lhs)
-       (Ast.InfixOp.to_string operator)
+       (InfixOp.to_string operator)
        (Value.to_type_string rhs))
 ;;
 
@@ -19,7 +24,7 @@ let unknown_prefix_operator operator rhs =
   Value.Error
     (Printf.sprintf
        "unknown operator: %s%s"
-       (Ast.PrefixOp.to_string operator)
+       (PrefixOp.to_string operator)
        (Value.to_type_string rhs))
 ;;
 
@@ -28,14 +33,12 @@ let identifier_not_found identifier =
 ;;
 
 let unsupported_expression statement =
-  Printf.sprintf
-    "could not evaluate expression \"%s\""
-    (Ast.Expression.to_string statement)
+  Printf.sprintf "could not evaluate expression \"%s\"" (Expression.to_string statement)
 ;;
 
 let evaluate_integer_infix lhs rhs operator =
   let open Value in
-  let open Ast.InfixOp in
+  let open InfixOp in
   match operator with
   | Plus -> Integer (lhs + rhs)
   | Minus -> Integer (lhs - rhs)
@@ -48,7 +51,6 @@ let evaluate_integer_infix lhs rhs operator =
 ;;
 
 let evaluate_boolean_infix lhs rhs operator =
-  let open Ast in
   match operator with
   | InfixOp.Eq -> Value.Boolean (lhs = rhs)
   | InfixOp.NotEq -> Value.Boolean (lhs <> rhs)
@@ -75,17 +77,16 @@ let rec evaluate_statements env statements =
   loop env statements Value.Null
 
 and evaluate_statement env = function
-  | Ast.Statement.Expression expression -> evaluate_expression env expression
-  | Ast.Statement.Return expression ->
+  | Statement.Expression expression -> evaluate_expression env expression
+  | Statement.Return expression ->
     let* env, return_value = evaluate_expression env expression in
     Ok (env, Value.Return return_value)
-  | Ast.Statement.Let { identifier; expression } ->
+  | Statement.Let { identifier; expression } ->
     let* env, value = evaluate_expression env expression in
     Ok (Environment.bind env identifier value, value)
 
 and evaluate_expression env expression =
-  let open Ast in
-  let open Ast.Expression in
+  let open Expression in
   match expression with
   | IntLiteral integer -> Ok (env, Value.Integer integer)
   | BoolLiteral boolean -> Ok (env, Value.Boolean boolean)
@@ -106,7 +107,7 @@ and evaluate_bang_operator env expression =
     ( env
     , match value with
       | Value.Boolean boolean -> Value.Boolean (not boolean)
-      | value -> unknown_prefix_operator Ast.PrefixOp.Bang value )
+      | value -> unknown_prefix_operator PrefixOp.Bang value )
 
 and evaluate_minus_operator env expression =
   let* env, value = evaluate_expression env expression in
@@ -114,7 +115,7 @@ and evaluate_minus_operator env expression =
     ( env
     , match value with
       | Value.Integer integer -> Value.Integer (-integer)
-      | value -> unknown_prefix_operator Ast.PrefixOp.Minus value )
+      | value -> unknown_prefix_operator PrefixOp.Minus value )
 
 and evaluate_infix_expression env left operator right =
   let* env, left = evaluate_expression env left in
