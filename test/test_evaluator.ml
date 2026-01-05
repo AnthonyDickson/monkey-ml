@@ -96,11 +96,26 @@ let test_evaluate_infix_expressions () =
   run_evaluator_tests tests
 ;;
 
+let test_evaluate_if_else_expressions () =
+  let open Monkeylang in
+  let tests =
+    [ "if (true) { 10 }", Value.Integer 10
+    ; "if (false) { 10 }", Value.Null
+    ; "if (1 < 2) { 10 }", Value.Integer 10
+    ; "if (1 > 2) { 10 }", Value.Null
+    ; "if (1 > 2) { 10 } else { 20 }", Value.Integer 20
+    ; "if (1 < 2) { 10 } else { 20 }", Value.Integer 10
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
 let test_suite =
   [ Alcotest.test_case "integer expressions" `Quick test_evaluate_integer_experessions
   ; Alcotest.test_case "boolean expressions" `Quick test_evaluate_boolean_expressions
     (* ; Alcotest.test_case "null literal" `Quick test_evaluate_null_literal *)
   ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
+  ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
   ]
 ;;
