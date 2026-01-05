@@ -1,5 +1,6 @@
 let evaluate_expression = function
   | Ast.Expression.IntLiteral integer -> Value.Integer integer
+  | Ast.Expression.BoolLiteral boolean -> Value.Boolean boolean
   | _ -> Value.Null
 ;;
 

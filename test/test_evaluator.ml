@@ -25,10 +25,20 @@ let run_evaluator_tests tests =
     tests
 ;;
 
-let test_evaluate_integers () =
+let test_evaluate_integer_literals () =
   let open Monkeylang in
   let tests = [ "5;", Value.Integer 5; "10;", Value.Integer 10 ] in
   run_evaluator_tests tests
 ;;
 
-let test_suite = [ Alcotest.test_case "integers" `Quick test_evaluate_integers ]
+let test_evaluate_boolean_literals () =
+  let open Monkeylang in
+  let tests = [ "true;", Value.Boolean true; "false;", Value.Boolean false ] in
+  run_evaluator_tests tests
+;;
+
+let test_suite =
+  [ Alcotest.test_case "integer literals" `Quick test_evaluate_integer_literals
+  ; Alcotest.test_case "boolean literals" `Quick test_evaluate_boolean_literals
+  ]
+;;
