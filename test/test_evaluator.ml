@@ -110,6 +110,27 @@ let test_evaluate_if_else_expressions () =
   run_evaluator_tests tests
 ;;
 
+let test_evaluate_return_statement () =
+  let open Monkeylang in
+  let tests =
+    [ "return 10", Value.Integer 10
+    ; "return 10; 9", Value.Integer 10
+    ; "return 2 * 5; 9", Value.Integer 10
+    ; "9; return 2 * 5; 8", Value.Integer 10
+    ; {|
+        if (10 > 1) {
+          if (10 > 1) {
+            return 10;
+          }
+
+          return 1;
+        }
+      |}, Value.Integer 10
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
 let test_suite =
   [ Alcotest.test_case "integer expressions" `Quick test_evaluate_integer_experessions
   ; Alcotest.test_case "boolean expressions" `Quick test_evaluate_boolean_expressions
@@ -117,5 +138,6 @@ let test_suite =
   ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
+  ; Alcotest.test_case "return statement" `Quick test_evaluate_return_statement
   ]
 ;;

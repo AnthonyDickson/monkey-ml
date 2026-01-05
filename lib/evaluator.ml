@@ -1,7 +1,22 @@
 let ( let* ) = Result.bind
 
-let rec evaluate_statement = function
+let rec evaluate_statements statements =
+  let rec loop statements value =
+    match statements with
+    | [] -> Ok value
+    | h :: t ->
+      let* value = evaluate_statement h in
+      (match value with
+       | Value.Return _ as return_value -> Ok return_value
+       | value -> loop t value)
+  in
+  loop statements Value.Null
+
+and evaluate_statement = function
   | Ast.Statement.Expression expression -> evaluate_expression expression
+  | Ast.Statement.Return expression ->
+    let* return_value = evaluate_expression expression in
+    Ok (Value.Return return_value)
   | statement ->
     Error
       (Printf.sprintf
@@ -92,16 +107,6 @@ and evaluate_if_else_expression
     match alternative_expression with
     | Some alternative -> evaluate_statements alternative
     | None -> Ok Value.Null)
-
-and evaluate_statements statements =
-  let rec loop statements value =
-    match statements with
-    | [] -> Ok value
-    | h :: t ->
-      let* value = evaluate_statement h in
-      loop t value
-  in
-  loop statements Value.Null
 ;;
 
 let evaluate program =
@@ -110,10 +115,9 @@ let evaluate program =
     | [] -> Ok value
     | h :: t ->
       let* value = evaluate_statement h in
-      loop t (Some value)
+      (match value with
+       | Value.Return return_value -> Ok return_value
+       | value -> loop t value)
   in
-  let* value_opt = loop program None in
-  match value_opt with
-  | Some value -> Ok value
-  | None -> Error "program did not evaluate to a value"
+  loop program Value.Null
 ;;
