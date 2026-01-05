@@ -25,20 +25,82 @@ let run_evaluator_tests tests =
     tests
 ;;
 
-let test_evaluate_integer_literals () =
+let test_evaluate_integer_experessions () =
   let open Monkeylang in
-  let tests = [ "5;", Value.Integer 5; "10;", Value.Integer 10 ] in
+  let tests =
+    [ "5;", Value.Integer 5
+    ; "10;", Value.Integer 10
+    ; "-5", Value.Integer (-5)
+    ; "-10", Value.Integer (-10)
+    ]
+  in
   run_evaluator_tests tests
 ;;
 
-let test_evaluate_boolean_literals () =
+let test_evaluate_boolean_expressions () =
   let open Monkeylang in
-  let tests = [ "true;", Value.Boolean true; "false;", Value.Boolean false ] in
+  let tests =
+    [ "true;", Value.Boolean true
+    ; "false;", Value.Boolean false
+    ; "1 < 2", Value.Boolean true
+    ; "1 > 2", Value.Boolean false
+    ; "1 < 1", Value.Boolean false
+    ; "1 > 1", Value.Boolean false
+    ; "1 == 1", Value.Boolean true
+    ; "1 != 1", Value.Boolean false
+    ; "1 == 2", Value.Boolean false
+    ; "1 != 2", Value.Boolean true
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
+let test_evaluate_null_literal () =
+  let open Monkeylang in
+  let tests = [ "null;", Value.Null ] in
+  run_evaluator_tests tests
+;;
+
+let test_evaluate_bang_operator () =
+  let open Monkeylang in
+  let tests =
+    [ "!true;", Value.Boolean false
+    ; "!false", Value.Boolean true
+    ; "!!true", Value.Boolean true
+    ; "!!false", Value.Boolean false
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
+let test_evaluate_infix_expressions () =
+  let open Monkeylang in
+  let tests =
+    [ "5", Value.Integer 5
+    ; "10", Value.Integer 10
+    ; "-5", Value.Integer (-5)
+    ; "-10", Value.Integer (-10)
+    ; "5 + 5 + 5 + 5 - 10", Value.Integer 10
+    ; "2 * 2 * 2 * 2 * 2", Value.Integer 32
+    ; "-50 + 100 + -50", Value.Integer 0
+    ; "5 * 2 + 10", Value.Integer 20
+    ; "5 + 2 * 10", Value.Integer 25
+    ; "20 + 2 * -10", Value.Integer 0
+    ; "50 / 2 * 2 + 10", Value.Integer 60
+    ; "2 * (5 + 10)", Value.Integer 30
+    ; "3 * 3 * 3 + 10", Value.Integer 37
+    ; "3 * (3 * 3) + 10", Value.Integer 37
+    ; "(5 + 10 * 2 + 15 / 3) * 2 + -10", Value.Integer 50
+    ]
+  in
   run_evaluator_tests tests
 ;;
 
 let test_suite =
-  [ Alcotest.test_case "integer literals" `Quick test_evaluate_integer_literals
-  ; Alcotest.test_case "boolean literals" `Quick test_evaluate_boolean_literals
+  [ Alcotest.test_case "integer expressions" `Quick test_evaluate_integer_experessions
+  ; Alcotest.test_case "boolean expressions" `Quick test_evaluate_boolean_expressions
+    (* ; Alcotest.test_case "null literal" `Quick test_evaluate_null_literal *)
+  ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
+  ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ]
 ;;
