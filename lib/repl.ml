@@ -1,7 +1,8 @@
 let ( let* ) = Result.bind
 let prompt = ">> "
 
-let monkey_face = {|
+let monkey_face =
+  {|
             __,__
    .--.  .-"     "-.  .--.
   / .. \/  .-. .-.  \/ .. \
@@ -14,22 +15,24 @@ let monkey_face = {|
         '._ '-=-' _.'
            '-----'
 |}
+;;
 
-let loop () =
-  print_string prompt;
-  let line = read_line () in
+let evaluate line =
   let* lexer = Lexer.make line in
   let parser = Parser.make lexer in
-  match Parser.parse_program parser with
-  | Ok program ->
-    print_endline (Ast.Program.to_string program);
-    Ok ()
-  | Error (_, errors) -> Error errors
+  let* program =
+    Parser.parse_program parser |> Result.map_error (fun (_, errors) -> errors)
+  in
+  Evaluator.evaluate program
 ;;
 
 let rec start () =
-  match loop () with
-  | Ok () -> start ()
+  print_string prompt;
+  let line = read_line () in
+  match evaluate line with
+  | Ok value ->
+    print_endline (Value.to_string value);
+    start ()
   | Error error ->
     print_endline monkey_face;
     print_endline "Woops! We ran into some monkey business here!";
