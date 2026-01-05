@@ -8,8 +8,8 @@ type t =
 
 let make input =
   if String.length input = 0
-  then Error "Input must be a non-zero length string"
-  else Ok { input; position = 0; read_position = 1; current_char = Some input.[0] }
+  then { input; position = 0; read_position = 0; current_char = None }
+  else { input; position = 0; read_position = 1; current_char = Some input.[0] }
 ;;
 
 let peek_next_char lexer =

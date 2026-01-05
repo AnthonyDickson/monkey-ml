@@ -18,7 +18,7 @@ let monkey_face =
 ;;
 
 let evaluate line =
-  let* lexer = Lexer.make line in
+  let lexer = Lexer.make line in
   let parser = Parser.make lexer in
   let* program =
     Parser.parse_program parser |> Result.map_error (fun (_, errors) -> errors)
