@@ -38,3 +38,16 @@ If you have `nix`, you can run `nix develop` to enter a dev shell with all of th
   ```shell
   dune build @fmt --auto-promote
   ```
+
+## TODO
+
+- Handle parser error `unexpected prefix token "}", next token is: Eof` for the code:
+  ```
+  if (true) {
+    false
+  }
+  ```
+  Note that `if (true) { false }` works fine
+- Ignore empty lines, currently evaluates as null
+- Handle EOF, currently prints "Fatal error: exception End_of_file"
+- Add alternative to REPL that instead reads from a file and just prints out the result

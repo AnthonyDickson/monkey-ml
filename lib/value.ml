@@ -23,3 +23,4 @@ let to_type_string = function
   | Return _ -> "RETURN"
   | Error _ -> "ERROR"
   | Null -> "NULL"
+;;

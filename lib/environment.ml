@@ -1,4 +1,4 @@
-(** A wrapper around a map for storing a programs bindings *)
+(** A wrapper around a map for storing a program's bindings *)
 
 module ValueMap = Map.Make (String)
 
