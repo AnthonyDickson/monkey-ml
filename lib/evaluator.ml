@@ -1,10 +1,7 @@
-(* TODO: Try eliminate use of result type, use Value.Error instead *)
 module Expression = Ast.Expression
 module InfixOp = Ast.InfixOp
 module PrefixOp = Ast.PrefixOp
 module Statement = Ast.Statement
-
-let ( let* ) = Result.bind
 
 let infix_type_mismatch lhs operator rhs =
   Value.Error
@@ -32,8 +29,12 @@ let identifier_not_found identifier =
   Value.Error (Printf.sprintf "identifier not found: %s" identifier)
 ;;
 
-let unsupported_expression statement =
-  Printf.sprintf "could not evaluate expression \"%s\"" (Expression.to_string statement)
+let invalid_function value =
+  Value.Error
+    (Printf.sprintf
+       "cannot use %s for function application: %s"
+       (Value.to_type_string value)
+       (Value.to_string value))
 ;;
 
 let evaluate_integer_infix lhs rhs operator =
@@ -63,15 +64,21 @@ let evaluate_boolean_infix lhs rhs operator =
          (Value.to_type_string (Boolean rhs)))
 ;;
 
+let evaluate_return_statement env identifier =
+  match Environment.get env identifier with
+  | Some value -> env, value
+  | None -> env, identifier_not_found identifier
+;;
+
 let rec evaluate_statements env statements =
   let rec loop env statements value =
     match statements with
-    | [] -> Ok (env, value)
+    | [] -> env, value
     | h :: t ->
-      let* env, value = evaluate_statement env h in
+      let env, value = evaluate_statement env h in
       (match value with
-       | Value.Return _ as return_value -> Ok (env, return_value)
-       | Value.Error _ as error_value -> Ok (env, error_value)
+       | Value.Return _ as return_value -> env, return_value
+       | Value.Error _ as error_value -> env, error_value
        | value -> loop env t value)
   in
   loop env statements Value.Null
@@ -79,57 +86,65 @@ let rec evaluate_statements env statements =
 and evaluate_statement env = function
   | Statement.Expression expression -> evaluate_expression env expression
   | Statement.Return expression ->
-    let* env, return_value = evaluate_expression env expression in
-    Ok (env, Value.Return return_value)
+    let env, return_value = evaluate_expression env expression in
+    env, Value.Return return_value
   | Statement.Let { identifier; expression } ->
-    let* env, value = evaluate_expression env expression in
-    Ok (Environment.bind env identifier value, value)
+    let env, value = evaluate_expression env expression in
+    Environment.bind env identifier value, value
+
+and evaluate_expressions env expressions =
+  let rec loop env expressions values =
+    match expressions with
+    | [] -> env, Ok (List.rev values)
+    | h :: t ->
+      let env, value = evaluate_expression env h in
+      (match value with
+       | Value.Error _ as error -> env, Error error
+       | value -> loop env t (value :: values))
+  in
+  loop env expressions []
 
 and evaluate_expression env expression =
   let open Expression in
   match expression with
-  | IntLiteral integer -> Ok (env, Value.Integer integer)
-  | BoolLiteral boolean -> Ok (env, Value.Boolean boolean)
+  | IntLiteral integer -> env, Value.Integer integer
+  | BoolLiteral boolean -> env, Value.Boolean boolean
   | Prefix (PrefixOp.Bang, sub_expression) -> evaluate_bang_operator env sub_expression
   | Prefix (PrefixOp.Minus, sub_expression) -> evaluate_minus_operator env sub_expression
   | Infix (left, operator, right) -> evaluate_infix_expression env left operator right
   | If { condition; consequent; alternative } ->
     evaluate_if_else_expression env condition consequent alternative
-  | Identifier identifier ->
-    (match Environment.get env identifier with
-     | Some value -> Ok (env, value)
-     | None -> Ok (env, identifier_not_found identifier))
-  | expression -> Error (unsupported_expression expression)
+  | Identifier identifier -> evaluate_return_statement env identifier
+  | FunctionLiteral { parameters; body } ->
+    env, Value.Function { parameters; body; environment = env }
+  | Call { func; arguments } -> env, evaluate_function_application env func arguments
 
 and evaluate_bang_operator env expression =
-  let* env, value = evaluate_expression env expression in
-  Ok
-    ( env
-    , match value with
-      | Value.Boolean boolean -> Value.Boolean (not boolean)
-      | value -> unknown_prefix_operator PrefixOp.Bang value )
+  let env, value = evaluate_expression env expression in
+  ( env
+  , match value with
+    | Value.Boolean boolean -> Value.Boolean (not boolean)
+    | value -> unknown_prefix_operator PrefixOp.Bang value )
 
 and evaluate_minus_operator env expression =
-  let* env, value = evaluate_expression env expression in
-  Ok
-    ( env
-    , match value with
-      | Value.Integer integer -> Value.Integer (-integer)
-      | value -> unknown_prefix_operator PrefixOp.Minus value )
+  let env, value = evaluate_expression env expression in
+  ( env
+  , match value with
+    | Value.Integer integer -> Value.Integer (-integer)
+    | value -> unknown_prefix_operator PrefixOp.Minus value )
 
 and evaluate_infix_expression env left operator right =
-  let* env, left = evaluate_expression env left in
-  let* env, right = evaluate_expression env right in
-  Ok
-    ( env
-    , match left, right with
-      | Value.Integer lhs, Value.Integer rhs -> evaluate_integer_infix lhs rhs operator
-      | Value.Boolean lhs, Value.Boolean rhs -> evaluate_boolean_infix lhs rhs operator
-      | (Value.Error _ as error), _ | _, (Value.Error _ as error) -> error
-      | lhs, rhs -> infix_type_mismatch lhs operator rhs )
+  let env, left = evaluate_expression env left in
+  let env, right = evaluate_expression env right in
+  ( env
+  , match left, right with
+    | Value.Integer lhs, Value.Integer rhs -> evaluate_integer_infix lhs rhs operator
+    | Value.Boolean lhs, Value.Boolean rhs -> evaluate_boolean_infix lhs rhs operator
+    | (Value.Error _ as error), _ | _, (Value.Error _ as error) -> error
+    | lhs, rhs -> infix_type_mismatch lhs operator rhs )
 
 and evaluate_if_else_expression env condition consequent alternative =
-  let* env, condition_value = evaluate_expression env condition in
+  let env, condition_value = evaluate_expression env condition in
   match condition_value with
   | Value.Boolean boolean ->
     if boolean
@@ -137,20 +152,48 @@ and evaluate_if_else_expression env condition consequent alternative =
     else (
       match alternative with
       | Some alternative -> evaluate_statements env alternative
-      | None -> Ok (env, Value.Null))
-  | Value.Error _ as error -> Ok (env, error)
-  | value -> Ok (env, if_type_mismatch value)
+      | None -> env, Value.Null)
+  | Value.Error _ as error -> env, error
+  | value -> env, if_type_mismatch value
+
+and evaluate_function_application env fn arguments =
+  let make_function_environment parameters args =
+    List.fold_left
+      (fun acc (param, arg) -> Environment.bind acc param arg)
+      (Environment.make ())
+      (List.combine parameters args)
+  and unwrap_return_value = function
+    | Value.Return return_value -> return_value
+    | value -> value
+  in
+  let apply_function env parameters body fn_environment =
+    let _, args = evaluate_expressions env arguments in
+    match args with
+    | Error error -> error
+    | Ok args ->
+      let fn_env =
+        Environment.union (make_function_environment parameters args) fn_environment
+      in
+      let _, value = evaluate_statements fn_env body in
+      unwrap_return_value value
+  in
+  let _, func = evaluate_expression env fn in
+  match func with
+  | Value.Function { parameters; body; environment = fn_environment } ->
+    apply_function env parameters body fn_environment
+  | Value.Error _ as error -> error
+  | value -> invalid_function value
 ;;
 
 let evaluate env program =
   let rec loop env program value =
     match program with
-    | [] -> Ok (env, value)
+    | [] -> env, value
     | h :: t ->
-      let* env, value = evaluate_statement env h in
+      let env, value = evaluate_statement env h in
       (match value with
-       | Value.Return return_value -> Ok (env, return_value)
-       | Value.Error _ as error_value -> Ok (env, error_value)
+       | Value.Return return_value -> env, return_value
+       | Value.Error _ as error_value -> env, error_value
        | value -> loop env t value)
   in
   loop env program Value.Null

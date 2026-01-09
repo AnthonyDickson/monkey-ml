@@ -28,7 +28,7 @@ let evaluate environment line =
   let* program =
     Parser.parse_program parser |> Result.map_error (fun (_, errors) -> errors)
   in
-  Evaluator.evaluate environment program
+  Ok (Evaluator.evaluate environment program)
 ;;
 
 let rec loop environment =

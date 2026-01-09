@@ -165,16 +165,15 @@ and parse_fn_expression parser =
   in
   let* parser = consume_token parser Function in
   let* parser = consume_token parser Lparen in
-  let* parser, arguments = parse_fn_args parser [] in
+  let* parser, parameters = parse_fn_args parser [] in
   let* parser = consume_token parser Rparen in
-  (* let* parser = consume_token parser Lbrace in *)
   let* parser, body = parse_statement_block parser in
   let parser =
     match parser.next_token with
     | Semicolon -> advance parser
     | _ -> parser
   in
-  Ok (parser, Expression.Fn { arguments; body })
+  Ok (parser, Expression.FunctionLiteral { parameters; body })
 
 and parse_prefix_expression parser operator =
   let* parser, rhs = parse_expression (advance parser) Precedence.Prefix in
@@ -211,7 +210,7 @@ and parse_fn_call_expression parser lhs =
   in
   let* parser = consume_token parser Lparen in
   let* parser, arguments = loop parser [] in
-  Ok (parser, Expression.Call { fn = lhs; arguments })
+  Ok (parser, Expression.Call { func = lhs; arguments })
 ;;
 
 let string_of_errors errors =

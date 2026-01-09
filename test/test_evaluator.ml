@@ -14,8 +14,7 @@ let run_evaluator_tests tests =
       Parser.parse_program parser |> Result.map_error (fun (_program, error) -> error)
     in
     let environment = Environment.make () in
-    let* value = Evaluator.evaluate environment program in
-    Ok value
+    Ok (Evaluator.evaluate environment program )
   in
   List.iter
     (fun (input, expected) ->
@@ -139,6 +138,56 @@ let test_evaluate_let_statement () =
   run_evaluator_tests tests
 ;;
 
+let test_evaluate_function_literal () =
+  let open Monkeylang in
+  let tests =
+    [ ( "fn(x) { x + 2 }"
+      , Value.Function
+          { parameters = [ "x" ]
+          ; body =
+              [ Ast.Statement.Expression
+                  (Ast.Expression.Infix
+                     ( Ast.Expression.Identifier "x"
+                     , Ast.InfixOp.Plus
+                     , Ast.Expression.IntLiteral 2 ))
+              ]
+          ; environment = Environment.make ()
+          } )
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
+let test_evaluate_function_application () =
+  let open Monkeylang in
+  let tests =
+    [ "let identity = fn(x) { x }; identity(5)", Value.Integer 5
+    ; "let identity = fn(x) { return x }; identity(5)", Value.Integer 5
+    ; "let double = fn(x) { x * 2 }; double(5)", Value.Integer 10
+    ; "let add = fn(x, y) { x + y }; add(5, 5)", Value.Integer 10
+    ; "let add = fn(x, y) { return x + y }; add(5 + 5, add(5, 5))", Value.Integer 20
+    ; "fn(x) { x }(5)", Value.Integer 5
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
+let test_evaluate_closure () =
+  let open Monkeylang in
+  let tests =
+    [ {|
+        let newAdder = fn(x) {
+          fn (y) { x + y};
+        };
+
+        let addTwo = newAdder(2);
+        addTwo(2);
+    |}, Value.Integer 4
+    ]
+  in
+  run_evaluator_tests tests
+;;
+
 let test_evaluate_error () =
   let open Monkeylang in
   let tests =
@@ -177,6 +226,9 @@ let test_suite =
   ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
+  ; Alcotest.test_case "function literal" `Quick test_evaluate_function_literal
+  ; Alcotest.test_case "function application" `Quick test_evaluate_function_application
+  ; Alcotest.test_case "closures" `Quick test_evaluate_closure
   ; Alcotest.test_case "return statement" `Quick test_evaluate_return_statement
   ; Alcotest.test_case "let statement" `Quick test_evaluate_let_statement
   ; Alcotest.test_case "evaluate error" `Quick test_evaluate_error

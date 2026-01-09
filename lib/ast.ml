@@ -95,12 +95,12 @@ and Expression : sig
         ; consequent : Statement.t list
         ; alternative : Statement.t list option
         }
-    | Fn of
-        { arguments : identifier list
+    | FunctionLiteral of
+        { parameters : identifier list
         ; body : Statement.t list
         }
     | Call of
-        { fn : t
+        { func : t
         ; arguments : t list
         }
 
@@ -117,12 +117,12 @@ end = struct
         ; consequent : Statement.t list
         ; alternative : Statement.t list option
         }
-    | Fn of
-        { arguments : identifier list
+    | FunctionLiteral of
+        { parameters: identifier list
         ; body : Statement.t list
         }
     | Call of
-        { fn : t
+        { func : t
         ; arguments : t list
         }
 
@@ -148,15 +148,15 @@ end = struct
          in
          Printf.sprintf "(if (%s) { %s } else { %s })" condition consequence alternative
        | None -> Printf.sprintf "(if (%s) { %s })" condition consequence)
-    | Fn { arguments; body } ->
+    | FunctionLiteral { parameters; body } ->
       Printf.sprintf
         "(fn (%s) { %s })"
-        (String.concat ", " arguments)
+        (String.concat ", " parameters)
         (String.concat "; " @@ List.map Statement.to_string body)
-    | Call { fn; arguments } ->
+    | Call { func; arguments } ->
       Printf.sprintf
         "%s(%s)"
-        (to_string fn)
+        (to_string func)
         (String.concat ", " (List.map to_string arguments))
   ;;
 end
