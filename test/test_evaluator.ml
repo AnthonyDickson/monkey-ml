@@ -232,6 +232,10 @@ let test_evaluate_error () =
     ; "if (true - false) { true }", Error "unknown operator: BOOLEAN - BOOLEAN"
     ; "8 / (5 - 5)", Error "division by zero"
     ; "foobar", Error "identifier not found: foobar"
+    ; ( "let add = fn(x, y) { x + y }; add(1)"
+      , Error "wrong number of arguments: expected 2, got 1" )
+    ; ( "let add = fn(x, y) { x + y }; add(1, 2, 3)"
+      , Error "wrong number of arguments: expected 2, got 3" )
     ]
   in
   check_error tests

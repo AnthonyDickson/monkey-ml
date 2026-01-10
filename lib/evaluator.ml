@@ -41,6 +41,32 @@ let invalid_function value =
     (Value.to_string value)
 ;;
 
+let incorrect_arity parameter_count argument_count =
+  Printf.sprintf
+    "wrong number of arguments: expected %d, got %d"
+    parameter_count
+    argument_count
+;;
+
+let make_function_environment parameters args =
+  List.fold_left2
+    (fun acc param arg -> Environment.bind acc param arg)
+    (Environment.make ())
+    parameters
+    args
+;;
+
+let unwrap_return_value = function
+  | Value.Return return_value -> return_value
+  | value -> value
+;;
+
+let check_arity parameters args =
+  let param_count = List.length parameters in
+  let arg_count = List.length args in
+  if param_count = arg_count then Ok () else Error (incorrect_arity param_count arg_count)
+;;
+
 let evaluate_integer_infix lhs rhs operator =
   let open Value in
   let open InfixOp in
@@ -101,7 +127,7 @@ and evaluate_expressions env expressions =
   in
   loop env expressions []
 
-and evaluate_expression env expression : (Value.t, string) result =
+and evaluate_expression env expression =
   let open Expression in
   match expression with
   | IntLiteral integer -> Ok (Value.Integer integer)
@@ -157,17 +183,9 @@ and evaluate_if_else_expression env condition consequent alternative =
   | value -> Error (if_type_mismatch value)
 
 and evaluate_function_application env fn arguments =
-  let make_function_environment parameters args =
-    List.fold_left
-      (fun acc (param, arg) -> Environment.bind acc param arg)
-      (Environment.make ())
-      (List.combine parameters args)
-  and unwrap_return_value = function
-    | Value.Return return_value -> return_value
-    | value -> value
-  in
   let apply_function env parameters body fn_environment =
     let* args = evaluate_expressions env arguments in
+    let* () = check_arity parameters args in
     let fn_env =
       Environment.union (make_function_environment parameters args) fn_environment
     in
@@ -177,8 +195,7 @@ and evaluate_function_application env fn arguments =
   let* func = evaluate_expression env fn in
   match func with
   | Value.Function { parameters; body; environment = fn_environment } ->
-    let* result = apply_function env parameters body fn_environment in
-    Ok result
+    apply_function env parameters body fn_environment
   | value -> Error (invalid_function value)
 ;;
 
