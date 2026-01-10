@@ -10,7 +10,6 @@ type t =
       ; environment : t Environment.t
       }
   | Null
-  | Error of string
 
 let function_to_string parameters body =
   Printf.sprintf
@@ -25,7 +24,6 @@ let rec to_string = function
   | Boolean value -> Bool.to_string value
   | Return value -> to_string value
   | Null -> "null"
-  | Error value -> value
   | Function { parameters; body; _ } -> function_to_string parameters body
 ;;
 
@@ -36,5 +34,4 @@ let to_type_string = function
   | Return _ -> "RETURN"
   | Function _ -> "FUNCTION"
   | Null -> "NULL"
-  | Error _ -> "ERROR"
 ;;

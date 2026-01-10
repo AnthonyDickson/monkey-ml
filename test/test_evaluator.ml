@@ -1,10 +1,20 @@
 let value_testable =
   let open Monkeylang in
-  let pp_token fmt token = Format.pp_print_string fmt (Value.to_string token) in
-  Alcotest.testable pp_token ( = )
+  let pp_value fmt value =
+    match value with
+    | Ok (_, value) -> Format.pp_print_string fmt (Value.to_string value)
+    | Error msg -> Format.pp_print_string fmt msg
+  in
+  let equal a b =
+    match a, b with
+    | Ok (_, val_a), Ok (_, val_b) -> val_a = val_b
+    | Error err_a, Error err_b -> err_a = err_b
+    | _, _ -> false
+  in
+  Alcotest.testable pp_value equal
 ;;
 
-let run_evaluator_tests tests =
+let run_evaluator_tests tests wrap_expected_value =
   let open Monkeylang in
   let ( let* ) = Result.bind in
   let run_test input =
@@ -14,15 +24,25 @@ let run_evaluator_tests tests =
       Parser.parse_program parser |> Result.map_error (fun (_program, error) -> error)
     in
     let environment = Environment.make () in
-    Ok (Evaluator.evaluate environment program )
+    Evaluator.evaluate environment program
   in
   List.iter
     (fun (input, expected) ->
-       match run_test input with
-       | Ok (_env, actual) ->
-         Alcotest.(check value_testable) ("evaluate: " ^ input) expected actual
-       | Error msg -> Alcotest.failf "Got unexpected error for input \"%s\": %s" input msg)
+       let actual = run_test input in
+       let expected = wrap_expected_value expected in
+       Alcotest.(check value_testable) ("evaluate: " ^ input) expected actual)
     tests
+;;
+
+let check_value_ok tests =
+  let placeholder_env = Monkeylang.Environment.make () in
+  let wrap_expected_value value = Ok (placeholder_env, value) in
+  run_evaluator_tests tests wrap_expected_value
+;;
+
+let check_error tests =
+  let wrap_expected_value value = value in
+  run_evaluator_tests tests wrap_expected_value
 ;;
 
 let test_evaluate_integer_experessions () =
@@ -34,7 +54,7 @@ let test_evaluate_integer_experessions () =
     ; "-10", Value.Integer (-10)
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_boolean_expressions () =
@@ -52,7 +72,7 @@ let test_evaluate_boolean_expressions () =
     ; "1 != 2", Value.Boolean true
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_bang_operator () =
@@ -64,7 +84,7 @@ let test_evaluate_bang_operator () =
     ; "!!false", Value.Boolean false
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_infix_expressions () =
@@ -87,7 +107,7 @@ let test_evaluate_infix_expressions () =
     ; "(5 + 10 * 2 + 15 / 3) * 2 + -10", Value.Integer 50
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_if_else_expressions () =
@@ -101,7 +121,7 @@ let test_evaluate_if_else_expressions () =
     ; "if (1 < 2) { 10 } else { 20 }", Value.Integer 10
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_return_statement () =
@@ -123,7 +143,7 @@ let test_evaluate_return_statement () =
       , Value.Integer 10 )
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_let_statement () =
@@ -135,7 +155,7 @@ let test_evaluate_let_statement () =
     ; "let a = 5; let b = a; let c = a + b + 5; c", Value.Integer 15
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_function_literal () =
@@ -155,7 +175,7 @@ let test_evaluate_function_literal () =
           } )
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_function_application () =
@@ -169,35 +189,32 @@ let test_evaluate_function_application () =
     ; "fn(x) { x }(5)", Value.Integer 5
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_closure () =
   let open Monkeylang in
   let tests =
-    [ {|
-        let newAdder = fn(x) {
-          fn (y) { x + y};
-        };
-
+    [ ( {|
+        let newAdder = fn(x) { fn (y) { x + y}; };
         let addTwo = newAdder(2);
         addTwo(2);
-    |}, Value.Integer 4
+    |}
+      , Value.Integer 4 )
     ]
   in
-  run_evaluator_tests tests
+  check_value_ok tests
 ;;
 
 let test_evaluate_error () =
-  let open Monkeylang in
   let tests =
-    [ "5 + true;", Value.Error "type mismatch: INTEGER + BOOLEAN"
-    ; "5 + true; 5;", Value.Error "type mismatch: INTEGER + BOOLEAN"
-    ; "-true", Value.Error "unknown operator: -BOOLEAN"
-    ; "!5", Value.Error "unknown operator: !INTEGER"
-    ; "true + false;", Value.Error "unknown operator: BOOLEAN + BOOLEAN"
-    ; "5; true + false; 5", Value.Error "unknown operator: BOOLEAN + BOOLEAN"
-    ; "if (10 > 1) { true + false };", Value.Error "unknown operator: BOOLEAN + BOOLEAN"
+    [ "5 + true;", Error "type mismatch: INTEGER + BOOLEAN"
+    ; "5 + true; 5;", Error "type mismatch: INTEGER + BOOLEAN"
+    ; "-true", Error "unknown operator: -BOOLEAN"
+    ; "!5", Error "unknown operator: !INTEGER"
+    ; "true + false;", Error "unknown operator: BOOLEAN + BOOLEAN"
+    ; "5; true + false; 5", Error "unknown operator: BOOLEAN + BOOLEAN"
+    ; "if (10 > 1) { true + false };", Error "unknown operator: BOOLEAN + BOOLEAN"
     ; ( {|
           if (10 > 1) {
             if (10 > 1) {
@@ -207,17 +224,17 @@ let test_evaluate_error () =
             return 1;
           }
         |}
-      , Value.Error "unknown operator: BOOLEAN + BOOLEAN" )
-    ; "return 5 + false", Value.Error "type mismatch: INTEGER + BOOLEAN"
-    ; "3 * 7 - 5 / false", Value.Error "type mismatch: INTEGER / BOOLEAN"
-    ; "3 * true - 5 / 9", Value.Error "type mismatch: INTEGER * BOOLEAN"
-    ; "if (3) { true }", Value.Error "type mismatch: if (INTEGER)"
-    ; "if (true - false) { true }", Value.Error "unknown operator: BOOLEAN - BOOLEAN"
-    ; "8 / (5 - 5)", Value.Error "division by zero"
-    ; "foobar", Value.Error "identifier not found: foobar"
+      , Error "unknown operator: BOOLEAN + BOOLEAN" )
+    ; "return 5 + false", Error "type mismatch: INTEGER + BOOLEAN"
+    ; "3 * 7 - 5 / false", Error "type mismatch: INTEGER / BOOLEAN"
+    ; "3 * true - 5 / 9", Error "type mismatch: INTEGER * BOOLEAN"
+    ; "if (3) { true }", Error "type mismatch: if (INTEGER)"
+    ; "if (true - false) { true }", Error "unknown operator: BOOLEAN - BOOLEAN"
+    ; "8 / (5 - 5)", Error "division by zero"
+    ; "foobar", Error "identifier not found: foobar"
     ]
   in
-  run_evaluator_tests tests
+  check_error tests
 ;;
 
 let test_suite =

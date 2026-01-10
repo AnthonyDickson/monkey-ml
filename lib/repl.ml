@@ -28,12 +28,13 @@ let evaluate environment line =
   let* program =
     Parser.parse_program parser |> Result.map_error (fun (_, errors) -> errors)
   in
-  Ok (Evaluator.evaluate environment program)
+  Evaluator.evaluate environment program
 ;;
 
 let rec loop environment =
   let line = read () in
-  match evaluate environment line with
+  let result = evaluate environment line in
+  match result with
   | Ok (environment, value) ->
     print_endline (Value.to_string value);
     loop environment
