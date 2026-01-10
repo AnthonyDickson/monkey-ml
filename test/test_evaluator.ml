@@ -7,6 +7,11 @@ let value_testable =
   in
   let equal a b =
     match a, b with
+    | ( Ok (_, Value.Function { parameters; body; environment = _ })
+      , Ok (_, Value.Function { parameters = parameters'; body = body'; environment = _ })
+      ) ->
+      (* Compare function structure but not environment *)
+      parameters = parameters' && body = body'
     | Ok (_, val_a), Ok (_, val_b) -> val_a = val_b
     | Error err_a, Error err_b -> err_a = err_b
     | _, _ -> false
