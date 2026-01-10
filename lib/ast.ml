@@ -118,7 +118,7 @@ end = struct
         ; alternative : Statement.t list option
         }
     | FunctionLiteral of
-        { parameters: identifier list
+        { parameters : identifier list
         ; body : Statement.t list
         }
     | Call of

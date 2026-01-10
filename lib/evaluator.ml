@@ -187,7 +187,9 @@ and evaluate_function_application env fn arguments =
     let* args = evaluate_expressions env arguments in
     let* () = check_arity parameters args in
     let fn_env =
-      Environment.union (make_function_environment parameters args) fn_environment
+      Environment.extend
+        ~base:fn_environment
+        ~bindings:(make_function_environment parameters args)
     in
     let* _, value = evaluate_statements fn_env body in
     Ok (unwrap_return_value value)
