@@ -88,6 +88,7 @@ and Expression : sig
     | Identifier of identifier
     | IntLiteral of int
     | BoolLiteral of bool
+    | StringLiteral of string
     | Prefix of PrefixOp.t * t
     | Infix of t * InfixOp.t * t
     | If of
@@ -110,6 +111,7 @@ end = struct
     | Identifier of identifier
     | IntLiteral of int
     | BoolLiteral of bool
+    | StringLiteral of string
     | Prefix of PrefixOp.t * t
     | Infix of t * InfixOp.t * t
     | If of
@@ -130,6 +132,9 @@ end = struct
     | Identifier ident -> ident
     | IntLiteral integer -> Int.to_string integer
     | BoolLiteral bool -> Bool.to_string bool
+    (* Print string literal with surrounding quotes, this helps differentiate
+      string literals from identifiers *)
+    | StringLiteral str -> Printf.sprintf {|"%s"|} str
     | Prefix (operator, expression) ->
       Printf.sprintf "(%s%s)" (PrefixOp.to_string operator) (to_string expression)
     | Infix (lhs, operator, rhs) ->

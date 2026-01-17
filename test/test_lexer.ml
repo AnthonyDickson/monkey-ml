@@ -28,6 +28,7 @@ let test_next_token () =
       ; ""
       ; "10 == 10;"
       ; "10 != 9;"
+      ; "\"this is a string\""
       ; "#"
       ]
   and expected =
@@ -104,6 +105,7 @@ let test_next_token () =
     ; Token.NotEq
     ; Token.Int 9
     ; Token.Semicolon
+    ; Token.String "this is a string"
     ; Token.Illegal '#'
     ; Token.Eof
     ]

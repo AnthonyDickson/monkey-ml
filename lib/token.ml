@@ -4,6 +4,7 @@ type t =
   (* Identifiers + literals *)
   | Ident of string (* add, foobar, x, y, ... *)
   | Int of int (* 1343456 *)
+  | String of string (* "camel camel" *)
   | True
   | False
   (* Operators *)
@@ -36,6 +37,7 @@ let to_string = function
   | Eof -> "Eof"
   | Ident literal -> literal
   | Int literal -> Int.to_string literal
+  | String literal -> literal
   | True -> "true"
   | False -> "false"
   | Assign -> "="

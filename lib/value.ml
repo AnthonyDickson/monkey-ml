@@ -3,6 +3,7 @@
 type t =
   | Integer of int
   | Boolean of bool
+  | String of string
   | Return of t
   | Function of
       { parameters : Ast.identifier list
@@ -22,6 +23,7 @@ let function_to_string parameters body =
 let rec to_string = function
   | Integer value -> Int.to_string value
   | Boolean value -> Bool.to_string value
+  | String value -> Printf.sprintf {|"%s"|} value
   | Return value -> to_string value
   | Null -> "null"
   | Function { parameters; body; _ } -> function_to_string parameters body
@@ -31,6 +33,7 @@ let rec to_string = function
 let to_type_string = function
   | Integer _ -> "INTEGER"
   | Boolean _ -> "BOOLEAN"
+  | String _ -> "STRING"
   | Return _ -> "RETURN"
   | Function _ -> "FUNCTION"
   | Null -> "NULL"

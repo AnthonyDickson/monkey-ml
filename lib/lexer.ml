@@ -81,6 +81,24 @@ let read_number_and_advance lexer =
     Token.Int (int_of_string str))
 ;;
 
+(** A string starts with a double quote and ends with the next double quote or EOF.
+    The surrounding double quotes are consumed by this function but are not
+    included in the string literal.
+
+    Escape sequences are not supported. *)
+let read_string_and_advance lexer =
+  (* This function is assumed to be called when the current char is '"'.
+  We must skip over the opening double quote. *)
+  let lexer = advance lexer in
+  let token, lexer =
+    read_multichar_token_and_advance
+      lexer
+      (fun ch -> ch <> '"')
+      (fun str -> Token.String str)
+  in
+  if lexer.current_char = Some '"' then token, advance lexer else token, lexer
+;;
+
 let rec next_token lexer =
   let one_char token = token, advance lexer
   and two_char token = token, advance (advance lexer) in
@@ -101,6 +119,7 @@ let rec next_token lexer =
   | Some '}' -> one_char Token.Rbrace
   | Some ',' -> one_char Token.Comma
   | Some ';' -> one_char Token.Semicolon
+  | Some '"' -> read_string_and_advance lexer
   | Some ch when is_letter ch -> read_identifier_and_advance lexer
   | Some ch when is_digit ch -> read_number_and_advance lexer
   | Some ch when is_whitespace ch -> next_token (advance lexer)

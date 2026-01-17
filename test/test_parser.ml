@@ -33,7 +33,14 @@ let run_parser_tests tests to_string =
 ;;
 
 let test_parse_literal_expression () =
-  let tests = [ "foobar;", "foobar"; "5;", "5"; "true;", "true"; "false;", "false" ] in
+  let tests =
+    [ "foobar;", "foobar"
+    ; "5;", "5"
+    ; "true;", "true"
+    ; "false;", "false"
+    ; {|"hello world";|}, {|"hello world"|}
+    ]
+  in
   run_parser_tests tests (fun statement ->
     match statement with
     | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
