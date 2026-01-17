@@ -116,6 +116,7 @@ let test_evaluate_infix_expressions () =
     ; "3 * 3 * 3 + 10", Value.Integer 37
     ; "3 * (3 * 3) + 10", Value.Integer 37
     ; "(5 + 10 * 2 + 15 / 3) * 2 + -10", Value.Integer 50
+    ; {|"foo" + "bar";|}, Value.String "foobar"
     ]
   in
   check_value_ok tests
@@ -241,6 +242,9 @@ let test_evaluate_error () =
     ; "3 * true - 5 / 9", Error "type mismatch: INTEGER * BOOLEAN"
     ; "if (3) { true }", Error "type mismatch: if (INTEGER)"
     ; "if (true - false) { true }", Error "unknown operator: BOOLEAN - BOOLEAN"
+    ; {|5 + "foo"|}, Error "type mismatch: INTEGER + STRING"
+    ; {|"foo" + true|}, Error "type mismatch: STRING + BOOLEAN"
+    ; {|"foo" - "bar"|}, Error "unknown operator: STRING - STRING"
     ; "8 / (5 - 5)", Error "division by zero"
     ; "foobar", Error "identifier not found: foobar"
     ; ( "let add = fn(x, y) { x + y }; add(1)"

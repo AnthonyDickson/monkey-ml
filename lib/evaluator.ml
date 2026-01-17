@@ -85,7 +85,13 @@ let evaluate_boolean_infix lhs rhs operator =
   match operator with
   | InfixOp.Eq -> Ok (Value.Boolean (lhs = rhs))
   | InfixOp.NotEq -> Ok (Value.Boolean (lhs <> rhs))
-  | _ -> Error (unknown_infix_operator (Boolean lhs) operator (Boolean rhs))
+  | _ -> Error (unknown_infix_operator (Value.Boolean lhs) operator (Value.Boolean rhs))
+;;
+
+let evaluate_string_infix lhs rhs operator =
+  match operator with
+  | InfixOp.Plus -> Ok (Value.String (lhs ^ rhs))
+  | _ -> Error (unknown_infix_operator (Value.String lhs) operator (Value.String rhs))
 ;;
 
 let evaluate_identifier env identifier =
@@ -132,7 +138,7 @@ and evaluate_expression env expression =
   match expression with
   | IntLiteral integer -> Ok (Value.Integer integer)
   | BoolLiteral boolean -> Ok (Value.Boolean boolean)
-  | StringLiteral str -> Ok(Value.String str)
+  | StringLiteral str -> Ok (Value.String str)
   | Prefix (PrefixOp.Bang, sub_expression) -> evaluate_bang_operator env sub_expression
   | Prefix (PrefixOp.Minus, sub_expression) -> evaluate_minus_operator env sub_expression
   | Infix (left, operator, right) -> evaluate_infix_expression env left operator right
@@ -164,6 +170,9 @@ and evaluate_infix_expression env left operator right =
     Ok result
   | Value.Boolean lhs, Value.Boolean rhs ->
     let* result = evaluate_boolean_infix lhs rhs operator in
+    Ok result
+  | Value.String lhs, Value.String rhs ->
+    let* result = evaluate_string_infix lhs rhs operator in
     Ok result
   | lhs, rhs -> Error (infix_type_mismatch lhs operator rhs)
 
