@@ -34,18 +34,25 @@ let unknown_infix_operator lhs operator rhs =
 
 let identifier_not_found identifier = Printf.sprintf "identifier not found: %s" identifier
 
-let invalid_function value =
+let not_a_function value =
   Printf.sprintf
-    "cannot use %s for function application: %s"
+    "%s %s is not a function"
     (Value.to_type_string value)
     (Value.to_string value)
 ;;
 
-let incorrect_arity parameter_count argument_count =
+let incorrect_arity ~expected:parameter_count ~got:argument_count =
   Printf.sprintf
     "wrong number of arguments: expected %d, got %d"
     parameter_count
     argument_count
+;;
+
+let incorrect_argument_type function_name value =
+  Printf.sprintf
+    "argument to `%s` not supported, got %s"
+    function_name
+    (Value.to_type_string value)
 ;;
 
 let make_function_environment parameters args =
@@ -64,7 +71,9 @@ let unwrap_return_value = function
 let check_arity parameters args =
   let param_count = List.length parameters in
   let arg_count = List.length args in
-  if param_count = arg_count then Ok () else Error (incorrect_arity param_count arg_count)
+  if param_count = arg_count
+  then Ok ()
+  else Error (incorrect_arity ~expected:param_count ~got:arg_count)
 ;;
 
 let evaluate_integer_infix lhs rhs operator =
@@ -97,7 +106,18 @@ let evaluate_string_infix lhs rhs operator =
 let evaluate_identifier env identifier =
   match Environment.get env identifier with
   | Some value -> Ok value
-  | None -> Error (identifier_not_found identifier)
+  | None ->
+    (match Builtin.get identifier with
+     | Some builtin -> Ok (Value.Builtin builtin)
+     | None -> Error (identifier_not_found identifier))
+;;
+
+let evaluate_builtin_function args = function
+  | Builtin.Len as builtin ->
+    (match args with
+     | [ Value.String str ] -> Ok (Value.Integer (String.length str))
+     | [ value ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
+     | _ -> Error (incorrect_arity ~expected:1 ~got:(List.length args)))
 ;;
 
 let rec evaluate_statements env statements =
@@ -208,7 +228,10 @@ and evaluate_function_application env fn arguments =
   match func with
   | Value.Function { parameters; body; environment = fn_environment } ->
     apply_function env parameters body fn_environment
-  | value -> Error (invalid_function value)
+  | Value.Builtin builtin ->
+    let* args = evaluate_expressions env arguments in
+    evaluate_builtin_function args builtin
+  | value -> Error (not_a_function value)
 ;;
 
 let evaluate env program =

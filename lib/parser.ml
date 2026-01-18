@@ -115,7 +115,7 @@ and prefix parser =
   | Int integer -> Ok (parser, Expression.IntLiteral integer)
   | True -> Ok (parser, Expression.BoolLiteral true)
   | False -> Ok (parser, Expression.BoolLiteral false)
-  | String str -> Ok(parser, Expression.StringLiteral str)
+  | String str -> Ok (parser, Expression.StringLiteral str)
   | Lparen -> parse_grouped_expression parser
   | (Minus | Bang) as operator -> parse_prefix_expression parser operator
   | If -> parse_if_expression parser

@@ -204,6 +204,27 @@ let test_evaluate_function_application () =
   check_value_ok tests
 ;;
 
+let test_evaluate_builtin_function () =
+  let open Monkeylang in
+  let ok_cases =
+    [ {|len("");|}, Value.Integer 0
+    ; {|len("four");|}, Value.Integer 4
+    ; {|len("hello world");|}, Value.Integer 11
+      (* Builtins can be overridden in the local scope *)
+    ; "let len = 42; len", Value.Integer 42
+    ]
+  in
+  let error_cases =
+    [ {|len(1);|}, Error "argument to `len` not supported, got INTEGER"
+    ; {|len("hello", "world");|}, Error "wrong number of arguments: expected 1, got 2"
+      (* Builtins can be overridden in the local scope *)
+    ; {|let len = 42; len("this is an error now")|}, Error "INTEGER 42 is not a function"
+    ]
+  in
+  check_value_ok ok_cases;
+  check_error error_cases
+;;
+
 let test_evaluate_closure () =
   let open Monkeylang in
   let tests =
@@ -265,6 +286,10 @@ let test_suite =
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
   ; Alcotest.test_case "function literal" `Quick test_evaluate_function_literal
   ; Alcotest.test_case "function application" `Quick test_evaluate_function_application
+  ; Alcotest.test_case
+      "builtin function application"
+      `Quick
+      test_evaluate_builtin_function
   ; Alcotest.test_case "closures" `Quick test_evaluate_closure
   ; Alcotest.test_case "return statement" `Quick test_evaluate_return_statement
   ; Alcotest.test_case "let statement" `Quick test_evaluate_let_statement
