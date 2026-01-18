@@ -1,6 +1,6 @@
-# monkeylang
+# Monkey ML
 
-An OCaml implementation of Monkey Language from "Writing an Interpreter in Go" by Thorsten Ball
+An OCaml implementation of the [Monkey language](https://monkeylang.org) from "Writing an Interpreter in Go" by Thorsten Ball
 
 ## Getting Started
 
@@ -38,6 +38,40 @@ If you have `nix`, you can run `nix develop` to enter a dev shell with all of th
   ```shell
   dune build @fmt --auto-promote
   ```
+
+## Deviations from the Monkey Canon
+
+Here I list the deviations from the [Monkey Canon](https://monkeylang.org/#the-monkey-canon).
+
+### Integers are not truthy
+
+In the [first book](https://interpreterbook.com/), non-zero integers evaluate to true when used in the conditional of an if exprsession:
+
+```
+>>> if (1) { "truthy" } else { "not truthy" }
+"truthy"
+```
+
+However, in Monkey ML it is an error to use anything other than a boolen expression:
+
+```
+>>> if (1) { "truthy" } else { "not truthy" }
+
+            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+
+Woops! We ran into some monkey business here!
+type mismatch: if (INTEGER)
+```
 
 ## TODO
 

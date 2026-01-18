@@ -1,4 +1,4 @@
-open Monkeylang
+open Monkey_ml
 
 let statement_testable =
   let pp_statement fmt statement =
@@ -8,7 +8,7 @@ let statement_testable =
 ;;
 
 let token_testable =
-  let open Monkeylang in
+  let open Monkey_ml in
   let pp_token fmt token = Format.pp_print_string fmt (Token.to_string token) in
   Alcotest.testable pp_token ( = )
 ;;

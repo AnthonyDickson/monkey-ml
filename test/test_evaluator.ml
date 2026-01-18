@@ -1,5 +1,5 @@
 let value_testable =
-  let open Monkeylang in
+  let open Monkey_ml in
   let pp_value fmt value =
     match value with
     | Ok (_, value) -> Format.pp_print_string fmt (Value.to_string value)
@@ -20,7 +20,7 @@ let value_testable =
 ;;
 
 let run_evaluator_tests tests wrap_expected_value =
-  let open Monkeylang in
+  let open Monkey_ml in
   let ( let* ) = Result.bind in
   let run_test input =
     let lexer = Lexer.make input in
@@ -40,7 +40,7 @@ let run_evaluator_tests tests wrap_expected_value =
 ;;
 
 let check_value_ok tests =
-  let placeholder_env = Monkeylang.Environment.make () in
+  let placeholder_env = Monkey_ml.Environment.make () in
   let wrap_expected_value value = Ok (placeholder_env, value) in
   run_evaluator_tests tests wrap_expected_value
 ;;
@@ -51,7 +51,7 @@ let check_error tests =
 ;;
 
 let test_evaluate_integer_experessions () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "5;", Value.Integer 5
     ; "10;", Value.Integer 10
@@ -63,13 +63,13 @@ let test_evaluate_integer_experessions () =
 ;;
 
 let test_evaluate_string_experessions () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests = [ {|"Hello, world!"|}, Value.String "Hello, world!" ] in
   check_value_ok tests
 ;;
 
 let test_evaluate_boolean_expressions () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "true;", Value.Boolean true
     ; "false;", Value.Boolean false
@@ -87,7 +87,7 @@ let test_evaluate_boolean_expressions () =
 ;;
 
 let test_evaluate_bang_operator () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "!true;", Value.Boolean false
     ; "!false", Value.Boolean true
@@ -99,7 +99,7 @@ let test_evaluate_bang_operator () =
 ;;
 
 let test_evaluate_infix_expressions () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "5", Value.Integer 5
     ; "10", Value.Integer 10
@@ -123,7 +123,7 @@ let test_evaluate_infix_expressions () =
 ;;
 
 let test_evaluate_if_else_expressions () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "if (true) { 10 }", Value.Integer 10
     ; "if (false) { 10 }", Value.Null
@@ -137,7 +137,7 @@ let test_evaluate_if_else_expressions () =
 ;;
 
 let test_evaluate_return_statement () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "return 10", Value.Integer 10
     ; "return 10; 9", Value.Integer 10
@@ -159,7 +159,7 @@ let test_evaluate_return_statement () =
 ;;
 
 let test_evaluate_let_statement () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "let a = 5; a", Value.Integer 5
     ; "let a = 5 * 5; a", Value.Integer 25
@@ -171,7 +171,7 @@ let test_evaluate_let_statement () =
 ;;
 
 let test_evaluate_function_literal () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ ( "fn(x) { x + 2 }"
       , Value.Function
@@ -191,7 +191,7 @@ let test_evaluate_function_literal () =
 ;;
 
 let test_evaluate_function_application () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ "let identity = fn(x) { x }; identity(5)", Value.Integer 5
     ; "let identity = fn(x) { return x }; identity(5)", Value.Integer 5
@@ -205,7 +205,7 @@ let test_evaluate_function_application () =
 ;;
 
 let test_evaluate_builtin_function () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let ok_cases =
     [ {|len("");|}, Value.Integer 0
     ; {|len("four");|}, Value.Integer 4
@@ -226,7 +226,7 @@ let test_evaluate_builtin_function () =
 ;;
 
 let test_evaluate_closure () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let tests =
     [ ( {|
         let newAdder = fn(x) { fn (y) { x + y}; };

@@ -1,11 +1,11 @@
 let token_testable =
-  let open Monkeylang in
+  let open Monkey_ml in
   let pp_token fmt token = Format.pp_print_string fmt (Token.to_string token) in
   Alcotest.testable pp_token ( = )
 ;;
 
 let test_next_token () =
-  let open Monkeylang in
+  let open Monkey_ml in
   let input =
     String.concat
       "\n"

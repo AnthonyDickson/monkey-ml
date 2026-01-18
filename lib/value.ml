@@ -1,4 +1,4 @@
-(** The representation of values for evaluating a Monkeylang AST. *)
+(** The representation of values for evaluating a Monkey_ml AST. *)
 
 type t =
   | Integer of int

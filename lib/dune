@@ -1,3 +1,3 @@
 (library
- (name monkeylang)
- (public_name monkeylang))
+ (name monkey_ml)
+ (public_name monkey-ml))

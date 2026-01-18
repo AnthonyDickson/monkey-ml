@@ -1,11 +1,11 @@
 (lang dune 3.19)
 
-(name monkeylang)
+(name monkey-ml)
 
 (generate_opam_files true)
 
 (source
- (uri forgejo.mystash.dev/anthony/monkeylang.git))
+ (uri https://github.com/AnthonyDickson/monkey-ml.git))
 
 (authors "Anthony Dickson <anthony.dickson9656@gmail.com>")
 
@@ -16,10 +16,10 @@
 (documentation https://url/to/documentation)
 
 (package
- (name monkeylang)
- (synopsis "An interpreter for MonkeyLang")
+ (name monkey-ml)
+ (synopsis "An interpreter for the Monkey language")
  (description
-  "An interpreter for MonkeyLang, the language from \"Writing an Interpreter in Go\" by Thorsten Ball")
+  "An OCaml implementation of Monkey, the programming language from \"Writing an Interpreter in Go\" by Thorsten Ball")
  (depends ocaml)
  (tags ("interpreter")))
 

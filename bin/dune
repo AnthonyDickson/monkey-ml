@@ -1,4 +1,4 @@
 (executable
- (public_name monkeylang)
+ (public_name monkey-ml)
  (name main)
- (libraries monkeylang))
+ (libraries monkey-ml))
