@@ -25,6 +25,8 @@ type t =
   | Rparen (* ) *)
   | Lbrace (* { *)
   | Rbrace (* } *)
+  | LBracket (* [ *)
+  | RBracket (* ] *)
   (* Keywords *)
   | Function
   | Let
@@ -56,6 +58,8 @@ let to_string = function
   | Rparen -> ")"
   | Lbrace -> "{"
   | Rbrace -> "}"
+  | LBracket -> "["
+  | RBracket -> "]"
   | Function -> "fn"
   | Let -> "let"
   | If -> "if"

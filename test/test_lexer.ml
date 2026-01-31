@@ -29,6 +29,8 @@ let test_next_token () =
       ; "10 == 10;"
       ; "10 != 9;"
       ; "\"this is a string\""
+      ; "[1, 2, 3]"
+      ; {|["one", "two", "three"]|}
       ; "#"
       ]
   and expected =
@@ -106,6 +108,20 @@ let test_next_token () =
     ; Token.Int 9
     ; Token.Semicolon
     ; Token.String "this is a string"
+    ; Token.LBracket
+    ; Token.Int 1
+    ; Token.Comma
+    ; Token.Int 2
+    ; Token.Comma
+    ; Token.Int 3
+    ; Token.RBracket
+    ; Token.LBracket
+    ; Token.String "one"
+    ; Token.Comma
+    ; Token.String "two"
+    ; Token.Comma
+    ; Token.String "three"
+    ; Token.RBracket
     ; Token.Illegal '#'
     ; Token.Eof
     ]
