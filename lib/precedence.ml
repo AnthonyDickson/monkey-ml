@@ -6,6 +6,7 @@ type t =
   | Product (* * *)
   | Prefix (* -x or !x *)
   | Call (* myFunction() *)
+  | Index (* myArray[2] *)
 
 let to_int = function
   | Lowest -> 0
@@ -15,6 +16,7 @@ let to_int = function
   | Product -> 4
   | Prefix -> 5
   | Call -> 6
+  | Index -> 7
 ;;
 
 let from_token token =
@@ -25,6 +27,7 @@ let from_token token =
   | Plus | Minus -> Sum
   | Asterisk | Slash -> Product
   | Lparen -> Call
+  | Lbracket -> Index
   | _ -> Lowest
 ;;
 

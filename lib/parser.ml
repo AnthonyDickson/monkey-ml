@@ -175,11 +175,7 @@ and parse_fn_expression parser =
   let* parser, parameters = parse_fn_args parser [] in
   let* parser = consume_token parser Rparen in
   let* parser, body = parse_statement_block parser in
-  let parser =
-    match parser.next_token with
-    | Semicolon -> advance parser
-    | _ -> parser
-  in
+  let parser = consume_next_if_matches parser Semicolon in
   Ok (parser, Expression.FunctionLiteral { parameters; body })
 
 and parse_prefix_expression parser operator =
@@ -190,13 +186,17 @@ and parse_prefix_expression parser operator =
 and infix parser precedence lhs =
   let next_token = parser.next_token in
   let next_precedence = Precedence.from_token next_token in
+  let binds_tighter = Precedence.binds_tighter precedence next_precedence in
   match next_token with
   | (Eq | NotEq | Lt | Gt | Plus | Minus | Asterisk | Slash) as operator
-    when Precedence.binds_tighter precedence next_precedence ->
+    when binds_tighter ->
     let* parser, expression = parse_infix_expression (advance parser) lhs operator in
     infix parser precedence expression
-  | Lparen when Precedence.binds_tighter precedence next_precedence ->
+  | Lparen when binds_tighter ->
     let* parser, expression = parse_function_call (advance parser) lhs in
+    infix parser precedence expression
+  | Lbracket when binds_tighter ->
+    let* parser, expression = parse_index_expression (advance parser) lhs in
     infix parser precedence expression
   | _ -> Ok (parser, lhs)
 
@@ -222,6 +222,13 @@ and parse_expression_list parser end_token =
       loop (advance parser) (expression :: args)
   in
   loop parser []
+
+and parse_index_expression parser lhs =
+  let* parser = consume_token parser Lbracket in
+  let* parser, index_expr = parse_expression parser Precedence.Lowest in
+  let* () = expect_peek_token parser Rbracket in
+  let parser = advance parser in
+  Ok (parser, Expression.Index { left = lhs; index = index_expr })
 ;;
 
 let string_of_errors errors =
