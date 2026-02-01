@@ -108,20 +108,20 @@ let test_next_token () =
     ; Token.Int 9
     ; Token.Semicolon
     ; Token.String "this is a string"
-    ; Token.LBracket
+    ; Token.Lbracket
     ; Token.Int 1
     ; Token.Comma
     ; Token.Int 2
     ; Token.Comma
     ; Token.Int 3
-    ; Token.RBracket
-    ; Token.LBracket
+    ; Token.Rbracket
+    ; Token.Lbracket
     ; Token.String "one"
     ; Token.Comma
     ; Token.String "two"
     ; Token.Comma
     ; Token.String "three"
-    ; Token.RBracket
+    ; Token.Rbracket
     ; Token.Illegal '#'
     ; Token.Eof
     ]

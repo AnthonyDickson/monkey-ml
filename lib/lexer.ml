@@ -117,8 +117,8 @@ let rec next_token lexer =
   | Some ')' -> one_char Token.Rparen
   | Some '{' -> one_char Token.Lbrace
   | Some '}' -> one_char Token.Rbrace
-  | Some '[' -> one_char Token.LBracket
-  | Some ']' -> one_char Token.RBracket
+  | Some '[' -> one_char Token.Lbracket
+  | Some ']' -> one_char Token.Rbracket
   | Some ',' -> one_char Token.Comma
   | Some ';' -> one_char Token.Semicolon
   | Some '"' -> read_string_and_advance lexer

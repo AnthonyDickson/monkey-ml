@@ -159,6 +159,7 @@ and evaluate_expression env expression =
   | IntLiteral integer -> Ok (Value.Integer integer)
   | BoolLiteral boolean -> Ok (Value.Boolean boolean)
   | StringLiteral str -> Ok (Value.String str)
+  | ArrayLiteral _elements -> failwith "unimplemented"
   | Prefix (PrefixOp.Bang, sub_expression) -> evaluate_bang_operator env sub_expression
   | Prefix (PrefixOp.Minus, sub_expression) -> evaluate_minus_operator env sub_expression
   | Infix (left, operator, right) -> evaluate_infix_expression env left operator right

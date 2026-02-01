@@ -117,6 +117,7 @@ and prefix parser =
   | False -> Ok (parser, Expression.BoolLiteral false)
   | String str -> Ok (parser, Expression.StringLiteral str)
   | Lparen -> parse_grouped_expression parser
+  | Lbracket -> parse_array_literal parser
   | (Minus | Bang) as operator -> parse_prefix_expression parser operator
   | If -> parse_if_expression parser
   | Function -> parse_fn_expression parser
@@ -131,6 +132,11 @@ and parse_grouped_expression parser =
   let* parser, expression = parse_expression (advance parser) Precedence.Lowest in
   let* () = expect_peek_token parser Rparen in
   Ok (advance parser, expression)
+
+and parse_array_literal parser =
+  let* parser = consume_token parser Token.Lbracket in
+  let* parser, elements = parse_expression_list parser Token.Rbracket in
+  Ok (parser, Expression.ArrayLiteral elements)
 
 and parse_if_expression parser =
   let* parser = consume_token parser If in
@@ -190,7 +196,7 @@ and infix parser precedence lhs =
     let* parser, expression = parse_infix_expression (advance parser) lhs operator in
     infix parser precedence expression
   | Lparen when Precedence.binds_tighter precedence next_precedence ->
-    let* parser, expression = parse_fn_call_expression (advance parser) lhs in
+    let* parser, expression = parse_function_call (advance parser) lhs in
     infix parser precedence expression
   | _ -> Ok (parser, lhs)
 
@@ -200,18 +206,22 @@ and parse_infix_expression parser lhs operator =
   let operator = InfixOp.from_token operator in
   Ok (parser, Expression.Infix (lhs, operator, rhs))
 
-and parse_fn_call_expression parser lhs =
+and parse_function_call parser function_expression =
+  let* parser = consume_token parser Token.Lparen in
+  let* parser, arguments = parse_expression_list parser Token.Rparen in
+  Ok (parser, Expression.Call { func = function_expression; arguments })
+
+and parse_expression_list parser end_token =
   let rec loop parser args =
     match parser.curr_token with
-    | Rparen | Eof -> Ok (parser, List.rev args)
+    | token when token = end_token -> Ok (parser, List.rev args)
+    | Eof -> Ok (parser, List.rev args)
     | Comma -> loop (advance parser) args
     | _ ->
       let* parser, expression = parse_expression parser Precedence.Lowest in
       loop (advance parser) (expression :: args)
   in
-  let* parser = consume_token parser Lparen in
-  let* parser, arguments = loop parser [] in
-  Ok (parser, Expression.Call { func = lhs; arguments })
+  loop parser []
 ;;
 
 let string_of_errors errors =

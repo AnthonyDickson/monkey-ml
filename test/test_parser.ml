@@ -104,6 +104,16 @@ let test_parse_fn_call_expression () =
     | _ -> Alcotest.failf "Expected expression statement")
 ;;
 
+let test_parse_array_literal () =
+  let tests =
+    [ "[1, 2, 3];", "[1, 2, 3]"; "[1, 2 * 2, 3 + 3]", "[1, (2 * 2), (3 + 3)]" ]
+  in
+  run_parser_tests tests (fun statement ->
+    match statement with
+    | Ast.Statement.Expression expr -> Ast.Expression.to_string expr
+    | _ -> Alcotest.failf "Expected expression statement")
+;;
+
 let test_parse_prefix_expression () =
   let tests =
     [ "!5;", "(!5)"; "-15;", "(-15)"; "!true;", "(!true)"; "!false;", "(!false)" ]
@@ -179,6 +189,7 @@ let test_suite =
   ; Alcotest.test_case "if expression" `Quick test_parse_if_expression
   ; Alcotest.test_case "function expression" `Quick test_parse_fn_expression
   ; Alcotest.test_case "function call expression" `Quick test_parse_fn_call_expression
+  ; Alcotest.test_case "array literal" `Quick test_parse_array_literal
   ; Alcotest.test_case "prefix expression statements" `Quick test_parse_prefix_expression
   ; Alcotest.test_case "infix expression statements" `Quick test_parse_infix_expression
   ; Alcotest.test_case "operator precedence" `Quick test_operator_precedence
