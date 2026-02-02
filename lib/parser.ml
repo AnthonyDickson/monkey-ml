@@ -1,12 +1,10 @@
-(* TODO: When OCaml 5.4.0 is available through NixPkgs, upgrade and replace
-   below let statement with `open Result.Syntax` *)
+open Result.Syntax
+
 open Token
 module Expression = Ast.Expression
 module InfixOp = Ast.InfixOp
 module PrefixOp = Ast.PrefixOp
 module Statement = Ast.Statement
-
-let ( let* ) = Result.bind
 
 type t =
   { lexer : Lexer.t

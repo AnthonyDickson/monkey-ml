@@ -1,9 +1,8 @@
+open Result.Syntax
 module Expression = Ast.Expression
 module InfixOp = Ast.InfixOp
 module PrefixOp = Ast.PrefixOp
 module Statement = Ast.Statement
-
-let ( let* ) = Result.bind
 
 let infix_type_mismatch lhs operator rhs =
   Printf.sprintf

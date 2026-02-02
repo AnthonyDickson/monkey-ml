@@ -20,8 +20,8 @@ let value_testable =
 ;;
 
 let run_evaluator_tests tests wrap_expected_value =
+  let open Result.Syntax in
   let open Monkey_ml in
-  let ( let* ) = Result.bind in
   let run_test input =
     let lexer = Lexer.make input in
     let parser = Parser.make lexer in
