@@ -158,8 +158,8 @@ and evaluate_expression env expression =
   | IntLiteral integer -> Ok (Value.Integer integer)
   | BoolLiteral boolean -> Ok (Value.Boolean boolean)
   | StringLiteral str -> Ok (Value.String str)
-  | ArrayLiteral _elements -> Error "array literals are not implemented"
-  | Index {left=_left;index=_index} -> Error "array indexing is not implemented"
+  | ArrayLiteral elements -> evaluate_array_expression env elements
+  | Index { left = _left; index = _index } -> Error "array indexing is not implemented"
   | Prefix (PrefixOp.Bang, sub_expression) -> evaluate_bang_operator env sub_expression
   | Prefix (PrefixOp.Minus, sub_expression) -> evaluate_minus_operator env sub_expression
   | Infix (left, operator, right) -> evaluate_infix_expression env left operator right
@@ -169,6 +169,19 @@ and evaluate_expression env expression =
   | FunctionLiteral { parameters; body } ->
     Ok (Value.Function { parameters; body; environment = env })
   | Call { func; arguments } -> evaluate_function_application env func arguments
+
+and evaluate_array_expression env expressions =
+  let* values =
+    List.fold_right
+      (fun expr acc ->
+         let* rest = acc in
+         let* value = evaluate_expression env expr in
+         Ok (value :: rest))
+      expressions
+      (Ok [])
+  in
+  let values = Iarray.of_list values in
+  Ok (Value.Array values)
 
 and evaluate_bang_operator env expression =
   let* value = evaluate_expression env expression in

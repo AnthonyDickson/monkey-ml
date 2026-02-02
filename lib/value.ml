@@ -4,6 +4,7 @@ type t =
   | Integer of int
   | Boolean of bool
   | String of string
+  | Array of t iarray
   | Return of t
   | Function of
       { parameters : Ast.identifier list
@@ -25,6 +26,10 @@ let rec to_string = function
   | Integer value -> Int.to_string value
   | Boolean value -> Bool.to_string value
   | String value -> Printf.sprintf {|"%s"|} value
+  | Array values ->
+    Printf.sprintf
+      "[%s]"
+      (Iarray.to_list values |> List.map to_string |> String.concat ", ")
   | Return value -> to_string value
   | Function { parameters; body; _ } -> function_to_string parameters body
   | Builtin value -> Builtin.to_string value
@@ -36,6 +41,7 @@ let to_type_string = function
   | Integer _ -> "INTEGER"
   | Boolean _ -> "BOOLEAN"
   | String _ -> "STRING"
+  | Array _ -> "ARRAY"
   | Return _ -> "RETURN"
   | Function _ -> "FUNCTION"
   | Builtin _ -> "BUILTIN"

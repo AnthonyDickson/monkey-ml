@@ -68,6 +68,18 @@ let test_evaluate_string_experessions () =
   check_value_ok tests
 ;;
 
+let test_evaluate_array_expressions () =
+  let open Monkey_ml in
+  let open Value in
+  let tests =
+    [ "[1, 2 * 2, 3 + 3]", Array [| Integer 1; Integer 4; Integer 6 |]
+    ; ( {|[1 < 2, fn(x) { x * x}(3), "foo" + "bar"]|}
+      , Array [| Boolean true; Integer 9; String "foobar" |] )
+    ]
+  in
+  check_value_ok tests
+;;
+
 let test_evaluate_boolean_expressions () =
   let open Monkey_ml in
   let tests =
@@ -281,6 +293,7 @@ let test_suite =
   [ Alcotest.test_case "integer expressions" `Quick test_evaluate_integer_experessions
   ; Alcotest.test_case "boolean expressions" `Quick test_evaluate_boolean_expressions
   ; Alcotest.test_case "string expressions" `Quick test_evaluate_string_experessions
+  ; Alcotest.test_case "array expressions" `Quick test_evaluate_array_expressions
   ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
