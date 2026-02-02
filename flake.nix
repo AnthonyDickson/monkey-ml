@@ -16,17 +16,21 @@
         devShells.default =
           with pkgs;
           mkShell {
-            packages = with pkgs; [
-              ocaml
-              dune_3
-              ocamlPackages.utop
-              ocamlPackages.odoc
-              ocamlPackages.ocaml-lsp
-              ocamlPackages.ocamlformat
-              ocamlPackages.alcotest
-              # For formatting markdown
-              dprint
-            ];
+            packages =
+              with pkgs;
+              [
+                dune_3
+                # For formatting markdown
+                dprint
+              ]
+              ++ (with ocamlPackages_latest; [
+                ocaml
+                utop
+                odoc
+                ocaml-lsp
+                ocamlformat
+                alcotest
+              ]);
           };
       }
     );
