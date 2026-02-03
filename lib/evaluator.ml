@@ -16,6 +16,10 @@ let if_type_mismatch condition_value =
   Printf.sprintf "type mismatch: if (%s)" (Value.to_type_string condition_value)
 ;;
 
+let array_index_type_mismatch left_value =
+  Printf.sprintf "index operator not supported: %s" (Value.to_type_string left_value)
+;;
+
 let unknown_prefix_operator operator rhs =
   Printf.sprintf
     "unknown operator: %s%s"
@@ -159,7 +163,7 @@ and evaluate_expression env expression =
   | BoolLiteral boolean -> Ok (Value.Boolean boolean)
   | StringLiteral str -> Ok (Value.String str)
   | ArrayLiteral elements -> evaluate_array_expression env elements
-  | Index { left = _left; index = _index } -> Error "array indexing is not implemented"
+  | Index { left; index } -> evaluate_index_expression env left index
   | Prefix (PrefixOp.Bang, sub_expression) -> evaluate_bang_operator env sub_expression
   | Prefix (PrefixOp.Minus, sub_expression) -> evaluate_minus_operator env sub_expression
   | Infix (left, operator, right) -> evaluate_infix_expression env left operator right
@@ -182,6 +186,16 @@ and evaluate_array_expression env expressions =
   in
   let values = Iarray.of_list values in
   Ok (Value.Array values)
+
+and evaluate_index_expression env left_expr index_expr =
+  let* left_value = evaluate_expression env left_expr in
+  let* index_value = evaluate_expression env index_expr in
+  match left_value, index_value with
+  | Value.Array elements, Value.Integer index ->
+    if 0 <= index && index < Iarray.length elements
+    then Ok (Iarray.get elements index)
+    else Ok Value.Null
+  | _, _ -> Error (array_index_type_mismatch left_value)
 
 and evaluate_bang_operator env expression =
   let* value = evaluate_expression env expression in

@@ -80,6 +80,28 @@ let test_evaluate_array_expressions () =
   check_value_ok tests
 ;;
 
+let test_evaluate_array_index_expressions () =
+  let open Monkey_ml in
+  let integer_cases =
+    [ "[1, 2, 3][0]", Value.Integer 1
+    ; "[1, 2, 3][1]", Value.Integer 2
+    ; "[1, 2, 3][2]", Value.Integer 3
+    ; "let i = 0; [1][i];", Value.Integer 1
+    ; "[1, 2, 3][1 + 1];", Value.Integer 3
+    ; "let myArray = [1, 2, 3]; myArray[2];", Value.Integer 3
+    ; "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", Value.Integer 6
+    ; "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value.Integer 2
+    ]
+  in
+  let null_cases =
+    [ "[1, 2, 3][3]", Value.Null
+    ; "[1, 2, 3][-1]", Value.Null
+    ]
+  in
+  check_value_ok integer_cases;
+  check_value_ok null_cases
+;;
+
 let test_evaluate_boolean_expressions () =
   let open Monkey_ml in
   let tests =
@@ -294,6 +316,7 @@ let test_suite =
   ; Alcotest.test_case "boolean expressions" `Quick test_evaluate_boolean_expressions
   ; Alcotest.test_case "string expressions" `Quick test_evaluate_string_experessions
   ; Alcotest.test_case "array expressions" `Quick test_evaluate_array_expressions
+  ; Alcotest.test_case "array index expressions" `Quick test_evaluate_array_index_expressions
   ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions
