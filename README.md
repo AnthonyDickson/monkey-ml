@@ -84,4 +84,3 @@ type mismatch: if (INTEGER)
   Note that `if (true) { false }` works fine
 - Ignore empty lines, currently evaluates as null
 - Handle EOF, currently prints "Fatal error: exception End_of_file"
-- Add alternative to REPL that instead reads from a file and just prints out the result

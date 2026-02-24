@@ -22,6 +22,19 @@ let read () =
   read_line ()
 ;;
 
+let read_all () =
+  let buffer = Buffer.create 1024 in
+  let rec loop () =
+    match read_line () with
+    | line ->
+      Buffer.add_string buffer line;
+      Buffer.add_char buffer '\n';
+      loop ()
+    | exception End_of_file -> Buffer.contents buffer
+  in
+  loop ()
+;;
+
 let evaluate environment line =
   let lexer = Lexer.make line in
   let parser = Parser.make lexer in
@@ -32,20 +45,31 @@ let evaluate environment line =
 ;;
 
 let rec loop environment =
-  let line = read () in
-  let result = evaluate environment line in
-  match result with
-  | Ok (environment, value) ->
-    print_endline (Value.to_string value);
-    loop environment
-  | Error error ->
-    print_endline monkey_face;
-    print_endline "Woops! We ran into some monkey business here!";
-    Printf.printf "%s\n" error;
-    loop environment
+  match read () with
+  | line ->
+    let result = evaluate environment line in
+    (match result with
+     | Ok (environment, value) ->
+       print_endline (Value.to_string value);
+       loop environment
+     | Error error ->
+       print_endline monkey_face;
+       print_endline "Woops! We ran into some monkey business here!";
+       Printf.printf "%s\n" error;
+       loop environment)
+  | exception End_of_file -> ()
 ;;
 
 let start () =
   let environment = Environment.make () in
-  loop environment
+  if Unix.isatty Unix.stdin
+  then loop environment
+  else (
+    let program = read_all () in
+    match evaluate environment program with
+    | Ok (_environment, value) -> print_endline (Value.to_string value)
+    | Error error ->
+      print_endline monkey_face;
+      print_endline "Woops! We ran into some monkey business here!";
+      Printf.printf "%s\n" error)
 ;;

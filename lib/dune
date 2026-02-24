@@ -1,3 +1,4 @@
 (library
  (name monkey_ml)
- (public_name monkey-ml))
+ (public_name monkey-ml)
+ (libraries unix))
