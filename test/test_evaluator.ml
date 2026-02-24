@@ -93,11 +93,7 @@ let test_evaluate_array_index_expressions () =
     ; "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", Value.Integer 2
     ]
   in
-  let null_cases =
-    [ "[1, 2, 3][3]", Value.Null
-    ; "[1, 2, 3][-1]", Value.Null
-    ]
-  in
+  let null_cases = [ "[1, 2, 3][3]", Value.Null; "[1, 2, 3][-1]", Value.Null ] in
   check_value_ok integer_cases;
   check_value_ok null_cases
 ;;
@@ -239,13 +235,25 @@ let test_evaluate_function_application () =
 ;;
 
 let test_evaluate_builtin_function () =
-  let open Monkey_ml in
+  let open Monkey_ml.Value in
   let ok_cases =
-    [ {|len("");|}, Value.Integer 0
-    ; {|len("four");|}, Value.Integer 4
-    ; {|len("hello world");|}, Value.Integer 11
-      (* Builtins can be overridden in the local scope *)
-    ; "let len = 42; len", Value.Integer 42
+    [ {|len("");|}, Integer 0
+    ; {|len("four");|}, Integer 4
+    ; {|len("hello world");|}, Integer 11
+    ; "len([1, 2, 3]);", Integer 3
+    ; "len([1]);", Integer 1
+    ; "len([]);", Integer 0
+    ; "first([1, 2, 3]);", Integer 1
+    ; "first([1]);", Integer 1
+    ; "first([]);", Null
+    ; "last([1, 2, 3]);", Integer 3
+    ; "last([1]);", Integer 1
+    ; "last([]);", Null
+    ; "rest([1, 2, 3]);", Array (Iarray.of_list [ Integer 2; Integer 3 ])
+    ; "rest([1]);", Array (Iarray.of_list [])
+    ; "rest([]);", Null
+    ; "push([1, 2], 3);", Array (Iarray.of_list [ Integer 1; Integer 2; Integer 3 ])
+    ; "let len = 42; len", Integer 42 (* Builtins can be overridden in the local scope *)
     ]
   in
   let error_cases =
@@ -316,7 +324,10 @@ let test_suite =
   ; Alcotest.test_case "boolean expressions" `Quick test_evaluate_boolean_expressions
   ; Alcotest.test_case "string expressions" `Quick test_evaluate_string_experessions
   ; Alcotest.test_case "array expressions" `Quick test_evaluate_array_expressions
-  ; Alcotest.test_case "array index expressions" `Quick test_evaluate_array_index_expressions
+  ; Alcotest.test_case
+      "array index expressions"
+      `Quick
+      test_evaluate_array_index_expressions
   ; Alcotest.test_case "bang operator" `Quick test_evaluate_bang_operator
   ; Alcotest.test_case "infix expressions" `Quick test_evaluate_infix_expressions
   ; Alcotest.test_case "if else expressions" `Quick test_evaluate_if_else_expressions

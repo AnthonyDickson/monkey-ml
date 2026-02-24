@@ -110,17 +110,53 @@ let evaluate_identifier env identifier =
   match Environment.get env identifier with
   | Some value -> Ok value
   | None ->
-    (match Builtin.get identifier with
+    (match Builtin.from_string_opt identifier with
      | Some builtin -> Ok (Value.Builtin builtin)
      | None -> Error (identifier_not_found identifier))
 ;;
 
-let evaluate_builtin_function args = function
-  | Builtin.Len as builtin ->
-    (match args with
-     | [ Value.String str ] -> Ok (Value.Integer (String.length str))
-     | [ value ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
-     | _ -> Error (incorrect_arity ~expected:1 ~got:(List.length args)))
+let evaluate_builtin_function args builtin =
+  let evaluate_len = function
+    | [ Value.String str ] -> Ok (Value.Integer (String.length str))
+    | [ Value.Array array ] -> Ok (Value.Integer (Iarray.length array))
+    | [ value ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
+    | _ -> Error (incorrect_arity ~expected:1 ~got:(List.length args))
+  in
+  let evaluate_first = function
+    | [ Value.Array array ] ->
+      if Iarray.length array > 0 then Ok (Iarray.get array 0) else Ok Value.Null
+    | [ value ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
+    | _ -> Error (incorrect_arity ~expected:1 ~got:(List.length args))
+  in
+  let evaluate_last = function
+    | [ Value.Array array ] ->
+      let length = Iarray.length array in
+      if length > 0 then Ok (Iarray.get array (length - 1)) else Ok Value.Null
+    | [ value ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
+    | _ -> Error (incorrect_arity ~expected:1 ~got:(List.length args))
+  in
+  let evaluate_rest = function
+    | [ Value.Array array ] ->
+      let length = Iarray.length array in
+      if length > 0
+      then Ok (Value.Array (Iarray.sub array ~pos:1 ~len:(length - 1)))
+      else Ok Value.Null
+    | [ value ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
+    | _ -> Error (incorrect_arity ~expected:1 ~got:(List.length args))
+  in
+  let evaluate_push = function
+    | [ Value.Array array; value ] ->
+      let value_wrapped = Iarray.of_list [ value ] in
+      Ok (Value.Array (Iarray.append array value_wrapped))
+    | [ value; _ ] -> Error (incorrect_argument_type (Builtin.to_string builtin) value)
+    | _ -> Error (incorrect_arity ~expected:2 ~got:(List.length args))
+  in
+  match builtin with
+  | Builtin.Len -> evaluate_len args
+  | Builtin.First -> evaluate_first args
+  | Builtin.Last -> evaluate_last args
+  | Builtin.Rest -> evaluate_rest args
+  | Builtin.Push -> evaluate_push args
 ;;
 
 let rec evaluate_statements env statements =
