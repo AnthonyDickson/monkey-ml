@@ -90,7 +90,10 @@ and Expression : sig
     | BoolLiteral of bool
     | StringLiteral of string
     | ArrayLiteral of t list
-    | Index of { left: t; index: t}
+    | Index of
+        { left : t
+        ; index : t
+        }
     | Prefix of PrefixOp.t * t
     | Infix of t * InfixOp.t * t
     | If of
@@ -115,7 +118,10 @@ end = struct
     | BoolLiteral of bool
     | StringLiteral of string
     | ArrayLiteral of t list
-    | Index of { left: t; index: t}
+    | Index of
+        { left : t
+        ; index : t
+        }
     | Prefix of PrefixOp.t * t
     | Infix of t * InfixOp.t * t
     | If of
@@ -139,8 +145,10 @@ end = struct
     (* Print string literal with surrounding quotes, this helps differentiate
       string literals from identifiers *)
     | StringLiteral str -> Printf.sprintf {|"%s"|} str
-    | ArrayLiteral elements -> Printf.sprintf "[%s]" (String.concat ", " (List.map to_string elements))
-    | Index {left; index} -> Printf.sprintf "(%s[%s])" (to_string left) (to_string index)
+    | ArrayLiteral elements ->
+      Printf.sprintf "[%s]" (String.concat ", " (List.map to_string elements))
+    | Index { left; index } ->
+      Printf.sprintf "(%s[%s])" (to_string left) (to_string index)
     | Prefix (operator, expression) ->
       Printf.sprintf "(%s%s)" (PrefixOp.to_string operator) (to_string expression)
     | Infix (lhs, operator, rhs) ->

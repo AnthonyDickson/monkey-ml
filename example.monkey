@@ -1,4 +1,14 @@
-let x = 5;
-let y = 7;
+let map = fn(arr, f) {
+	let iter = fn(arr, accumulated) {
+		if (len(arr) == 0) {
+			accumulated
+		} else {
+			iter(rest(arr), push(accumulated, f(first(arr))));
+		}
+	};
+	iter(arr, []);
+};
 
-if ((x + y) / x > 5) { x / 7 } else { y * 7 }
+let a = [1, 2, 3, 4];
+let double = fn(x) { x * 2 };
+map(a, double);

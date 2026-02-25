@@ -1,4 +1,5 @@
 open Result.Syntax
+
 let prompt = ">> "
 
 let monkey_face =

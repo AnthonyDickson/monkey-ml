@@ -12,7 +12,7 @@ type t =
   | Rest
   | Push
 
-let from_string_opt  = function
+let from_string_opt = function
   | "len" -> Some Len
   | "first" -> Some First
   | "last" -> Some Last

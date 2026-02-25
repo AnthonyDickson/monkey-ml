@@ -10,6 +10,7 @@ type t =
       { parameters : Ast.identifier list
       ; body : Ast.Statement.t list
       ; environment : t Environment.t
+      ; name : Ast.identifier option
       }
   | Builtin of Builtin.t
   | Null

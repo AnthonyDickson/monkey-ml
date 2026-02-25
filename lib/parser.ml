@@ -1,5 +1,4 @@
 open Result.Syntax
-
 open Token
 module Expression = Ast.Expression
 module InfixOp = Ast.InfixOp

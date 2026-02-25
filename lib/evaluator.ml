@@ -180,7 +180,12 @@ and evaluate_statement env = function
     Ok (env, Value.Return return_value)
   | Statement.Let { identifier; expression } ->
     let* value = evaluate_expression env expression in
-    Ok (Environment.bind env identifier value, value)
+    (match value with
+     | Value.Function fn ->
+       (* Preserve closures while allowing self-recursion for let-bound functions. *)
+       let function_value = Value.Function { fn with name = Some identifier } in
+       Ok (Environment.bind env identifier function_value, function_value)
+     | _ -> Ok (Environment.bind env identifier value, value))
 
 and evaluate_expressions env expressions =
   let rec loop env expressions values =
@@ -207,7 +212,7 @@ and evaluate_expression env expression =
     evaluate_if_else_expression env condition consequent alternative
   | Identifier identifier -> evaluate_identifier env identifier
   | FunctionLiteral { parameters; body } ->
-    Ok (Value.Function { parameters; body; environment = env })
+    Ok (Value.Function { parameters; body; environment = env; name = None })
   | Call { func; arguments } -> evaluate_function_application env func arguments
 
 and evaluate_array_expression env expressions =
@@ -290,7 +295,13 @@ and evaluate_function_application env fn arguments =
   in
   let* func = evaluate_expression env fn in
   match func with
-  | Value.Function { parameters; body; environment = fn_environment } ->
+  | Value.Function { parameters; body; environment = fn_environment; name } ->
+    (* Re-bind the function name into its closure for recursive calls. *)
+    let fn_environment =
+      match name with
+      | Some name -> Environment.bind fn_environment name func
+      | None -> fn_environment
+    in
     apply_function env parameters body fn_environment
   | Value.Builtin builtin ->
     let* args = evaluate_expressions env arguments in

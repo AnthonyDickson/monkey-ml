@@ -7,9 +7,11 @@ let value_testable =
   in
   let equal a b =
     match a, b with
-    | ( Ok (_, Value.Function { parameters; body; environment = _ })
-      , Ok (_, Value.Function { parameters = parameters'; body = body'; environment = _ })
-      ) ->
+    | ( Ok (_, Value.Function { parameters; body; environment = _; name = _ })
+      , Ok
+          ( _
+          , Value.Function
+              { parameters = parameters'; body = body'; environment = _; name = _ } ) ) ->
       (* Compare function structure but not environment *)
       parameters = parameters' && body = body'
     | Ok (_, val_a), Ok (_, val_b) -> val_a = val_b
@@ -214,6 +216,7 @@ let test_evaluate_function_literal () =
                      , Ast.Expression.IntLiteral 2 ))
               ]
           ; environment = Environment.make ()
+          ; name = None
           } )
     ]
   in
@@ -228,6 +231,9 @@ let test_evaluate_function_application () =
     ; "let double = fn(x) { x * 2 }; double(5)", Value.Integer 10
     ; "let add = fn(x, y) { x + y }; add(5, 5)", Value.Integer 10
     ; "let add = fn(x, y) { return x + y }; add(5 + 5, add(5, 5))", Value.Integer 20
+    ; ( "let fib = fn(n) { if ( n < 1 ) { return 0 } else { if ( n == 1 ) { return 1 } \
+         else { return fib(n - 2) + fib(n - 1) } } }; fib(3);"
+      , Value.Integer 2 )
     ; "fn(x) { x }(5)", Value.Integer 5
     ]
   in
