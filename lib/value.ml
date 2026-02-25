@@ -17,7 +17,7 @@ type t =
 let function_to_string parameters body =
   Printf.sprintf
     "fn(%s) {\n%s\n}"
-    (String.concat "\n" parameters)
+    (String.concat ", " parameters)
     (Ast.Program.to_string body)
 ;;
 
