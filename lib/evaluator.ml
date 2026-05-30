@@ -254,15 +254,9 @@ and evaluate_infix_expression env left operator right =
   let* left = evaluate_expression env left in
   let* right = evaluate_expression env right in
   match left, right with
-  | Value.Integer lhs, Value.Integer rhs ->
-    let* result = evaluate_integer_infix lhs rhs operator in
-    Ok result
-  | Value.Boolean lhs, Value.Boolean rhs ->
-    let* result = evaluate_boolean_infix lhs rhs operator in
-    Ok result
-  | Value.String lhs, Value.String rhs ->
-    let* result = evaluate_string_infix lhs rhs operator in
-    Ok result
+  | Value.Integer lhs, Value.Integer rhs -> evaluate_integer_infix lhs rhs operator
+  | Value.Boolean lhs, Value.Boolean rhs -> evaluate_boolean_infix lhs rhs operator
+  | Value.String lhs, Value.String rhs -> evaluate_string_infix lhs rhs operator
   | lhs, rhs -> Error (infix_type_mismatch lhs operator rhs)
 
 and evaluate_if_else_expression env condition consequent alternative =
